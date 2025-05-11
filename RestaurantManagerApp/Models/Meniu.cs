@@ -11,36 +11,17 @@ namespace RestaurantManagerApp.Models
         public string? CaleImagine { get; set; }
         public bool EsteActiv { get; set; }
 
-        // Proprietăți de navigare
         public virtual Categorie? Categorie { get; set; }
-        public virtual ICollection<PreparatInMeniu> PreparateInMeniu { get; set; } // Lista de preparate din meniu, cu cantitățile specifice
+        // Colecția va fi de tipul entității de joncțiune
+        public virtual ICollection<MeniuPreparat> MeniuPreparate { get; set; }
 
-        // Proprietate calculată (nu se mapează direct la o coloană din tblMeniuri)
-        // Va fi calculat în BLL/ViewModel
         public decimal PretCalculat { get; set; }
 
         public Meniu()
         {
             Nume = string.Empty;
             EsteActiv = true;
-            PreparateInMeniu = new List<PreparatInMeniu>();
-        }
-    }
-
-    // Clasa ajutătoare pentru a reprezenta un preparat într-un meniu, cu cantitatea sa specifică
-    // Aceasta nu corespunde direct unei tabele separate (MeniuPreparate este tabela de legătură),
-    // dar este utilă pentru a popula ICollection<PreparatInMeniu> din clasa Meniu.
-    public class PreparatInMeniu
-    {
-        public int PreparatID { get; set; }
-        public virtual Preparat? Preparat { get; set; } // Detaliile preparatului
-        public string CantitateInMeniu { get; set; }
-        public string UnitateMasuraCantitateInMeniu { get; set; }
-
-        public PreparatInMeniu()
-        {
-            CantitateInMeniu = string.Empty;
-            UnitateMasuraCantitateInMeniu = "g";
+            MeniuPreparate = new List<MeniuPreparat>(); // Inițializăm colecția
         }
     }
 }

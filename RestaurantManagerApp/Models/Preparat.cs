@@ -19,6 +19,8 @@ namespace RestaurantManagerApp.Models
         public virtual Categorie? Categorie { get; set; } // Obiectul Categorie asociat
         public virtual ICollection<Alergen> Alergeni { get; set; } // Lista de Alergeni ai preparatului
 
+        public virtual ICollection<MeniuPreparat> MeniuPreparate { get; set; }
+
         public Preparat()
         {
             Denumire = string.Empty;
@@ -26,6 +28,7 @@ namespace RestaurantManagerApp.Models
             UnitateMasuraStoc = "g";
             EsteActiv = true;
             Alergeni = new List<Alergen>(); // Inițializăm lista pentru a evita NullReferenceException
+            MeniuPreparate = new List<MeniuPreparat>();
         }
     }
 }

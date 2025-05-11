@@ -1,0 +1,39 @@
+﻿<Window x:Class="RestaurantManagerApp.Views.CategoriesTestView"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:RestaurantManagerApp.Views"
+        xmlns:vm="clr-namespace:RestaurantManagerApp.ViewModels"
+        mc:Ignorable="d"
+        Title="Testare Management Categorii" Height="450" Width="600"
+        d:DataContext="{d:DesignInstance Type=vm:CategoriesTestViewModel, IsDesignTimeCreatable=True}"
+        Loaded="Window_Loaded">
+    <Grid Margin="10">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Secțiunea de adăugare -->
+        <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,10">
+            <TextBlock Text="Nume Categorie Nouă:" VerticalAlignment="Center" Margin="0,0,5,0"/>
+            <TextBox Text="{Binding NumeCategorieNoua, UpdateSourceTrigger=PropertyChanged}" Width="200" Margin="0,0,10,0"/>
+            <Button Content="Adaugă Categorie" Command="{Binding AddCategoryCommand}" Padding="5"/>
+        </StackPanel>
+
+        <!-- Lista de categorii -->
+        <GroupBox Grid.Row="1" Header="Categorii Existente">
+            <ListBox ItemsSource="{Binding Categorii}" 
+                     SelectedItem="{Binding SelectedCategorie}"
+                     DisplayMemberPath="Nume"/>
+        </GroupBox>
+
+        <!-- Buton de ștergere -->
+        <Button Grid.Row="2" Content="Șterge Categoria Selectată" 
+                Command="{Binding DeleteCategoryCommand}" 
+                HorizontalAlignment="Right" Margin="0,10,0,0" Padding="5"/>
+
+    </Grid>
+</Window>
