@@ -1,0 +1,108 @@
+﻿<Window x:Class="RestaurantManagerApp.Views.CategoryManagementView"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:RestaurantManagerApp.Views"
+        xmlns:converters="clr-namespace:RestaurantManagerApp.Converters"
+        xmlns:vm="clr-namespace:RestaurantManagerApp.ViewModels"
+        mc:Ignorable="d"
+        Title="Management Categorii" Height="500" Width="800"
+        d:DataContext="{d:DesignInstance Type=vm:CategoryManagementViewModel, IsDesignTimeCreatable=True}"
+        Loaded="Window_Loaded">
+
+    <Window.Resources>
+        <!-- Convertor pentru a schimba titlul GroupBox-ului -->
+        <converters:BooleanToEditModeHeaderConverter x:Key="BooleanToEditModeHeaderConverter"/>
+        <converters:InvertedBooleanToVisibilityConverter x:Key="InvertedBooleanToVisibilityConverter"/>
+        <!-- Convertor pentru vizibilitate -->
+        <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
+    </Window.Resources>
+
+    <Grid Margin="15">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="300"/>
+            <!-- Lista de categorii -->
+            <ColumnDefinition Width="*"/>
+            <!-- Formularul de editare/adăugare -->
+        </Grid.ColumnDefinitions>
+
+        <!-- Coloana Stânga: Lista de Categorii -->
+        <Grid Grid.Column="0" Margin="0,0,10,0">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+
+            <TextBlock Grid.Row="0" Text="Categorii Existente" FontSize="16" FontWeight="Bold" Margin="0,0,0,10"/>
+
+            <ListBox Grid.Row="1" ItemsSource="{Binding Categorii}" 
+                     SelectedItem="{Binding SelectedCategorie}"
+                     DisplayMemberPath="Nume"
+                     BorderThickness="1" BorderBrush="Gray"/>
+
+            <Button Grid.Row="2" Content="Adaugă Categorie Nouă" 
+                    Command="{Binding PrepareNewCategoryCommand}" 
+                    Margin="0,10,0,0" Padding="5"/>
+        </Grid>
+
+        <!-- Coloana Dreapta: Formular de Adăugare/Editare -->
+        <GroupBox Grid.Column="1" Header="{Binding IsEditMode, Converter={StaticResource BooleanToEditModeHeaderConverter}, FallbackValue='Formular Categorie'}"
+                  Padding="10" BorderThickness="1" BorderBrush="Gray">
+            <Grid DataContext="{Binding}">
+                <!-- DataContext-ul este deja CategoryManagementViewModel -->
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+
+                <TextBlock Grid.Row="0" Grid.Column="0" Text="Nume:" VerticalAlignment="Center" Margin="0,0,10,5"/>
+                <TextBox Grid.Row="0" Grid.Column="1" 
+                         Text="{Binding FormNume, UpdateSourceTrigger=PropertyChanged, ValidatesOnNotifyDataErrors=True}" 
+                         Margin="0,0,0,5"/>
+                <!-- Afișare eroare de validare pentru Nume -->
+                <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding (Validation.Errors)[0].ErrorContent, ElementName=FormNumeTextBox}"
+                           Foreground="Red" FontSize="10" Margin="0,0,0,10" 
+                           Visibility="{Binding ElementName=FormNumeTextBox, Path=(Validation.HasError), Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                <!-- Am adăugat x:Name la TextBox pentru a putea lega eroarea -->
+                <TextBox x:Name="FormNumeTextBox" Grid.Row="0" Grid.Column="1" 
+                         Text="{Binding FormNume, UpdateSourceTrigger=PropertyChanged, ValidatesOnNotifyDataErrors=True}" 
+                         Margin="0,0,0,5"/>
+
+
+                <TextBlock Grid.Row="2" Grid.Column="0" Text="Activă:" VerticalAlignment="Center" Margin="0,0,10,5"/>
+                <CheckBox Grid.Row="2" Grid.Column="1" 
+                          IsChecked="{Binding FormEsteActiv}" 
+                          VerticalAlignment="Center" Margin="0,0,0,10"/>
+
+                <!-- ID-ul Categoriei (doar afișat în mod editare, nu editabil) -->
+                <TextBlock Grid.Row="3" Grid.Column="0" Text="ID:" VerticalAlignment="Center" Margin="0,0,10,5"
+                           Visibility="{Binding IsEditMode, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                <TextBlock Grid.Row="3" Grid.Column="1"
+                           Text="{Binding SelectedCategorie.CategorieID, Mode=OneWay, FallbackValue='-'}"
+                           Visibility="{Binding IsEditMode, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+
+
+                <!-- Butoane de Acțiune pentru Formular -->
+                <StackPanel Grid.Row="5" Grid.Column="0" Grid.ColumnSpan="2" Orientation="Horizontal" HorizontalAlignment="Right">
+                    <Button Content="Salvează" Command="{Binding SaveChangesCommand}" Margin="0,0,10,0" Padding="10,5"
+                            Visibility="{Binding IsEditMode, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                    <Button Content="Adaugă" Command="{Binding AddNewCategoryCommand}" Margin="0,0,10,0" Padding="10,5"
+                            Visibility="{Binding IsAddMode, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                    <Button Content="Anulează" Command="{Binding CancelEditCommand}" Margin="0,0,10,0" Padding="10,5"/>
+                    <Button Content="Șterge" Command="{Binding DeleteCategoryCommand}" Padding="10,5" Background="LightCoral"
+                            Visibility="{Binding IsEditMode, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                </StackPanel>
+            </Grid>
+        </GroupBox>
+    </Grid>
+</Window>

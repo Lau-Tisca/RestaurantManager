@@ -3,6 +3,7 @@ using CommunityToolkit.Mvvm.Input;         // Pentru RelayCommand
 using RestaurantManagerApp.DataAccess;    // Pentru ICategorieRepository
 using RestaurantManagerApp.Models;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows; // Pentru MessageBox
@@ -11,7 +12,7 @@ namespace RestaurantManagerApp.ViewModels
 {
     public partial class CategoriesTestViewModel : ObservableObject // Folosim partial pentru source generators
     {
-        private readonly ICategorieRepository _categorieRepository;
+        private readonly ICategorieRepository? _categorieRepository;
 
         // O colecție care notifică UI-ul când se schimbă (adăugare, ștergere elemente)
         [ObservableProperty] // Generează automat proprietatea Categorii și notificarea
@@ -28,9 +29,31 @@ namespace RestaurantManagerApp.ViewModels
         public IAsyncRelayCommand AddCategoryCommand { get; }
         public IAsyncRelayCommand DeleteCategoryCommand { get; }
 
+        // Constructor pentru Design Time (fără parametri)
+        public CategoriesTestViewModel()
+        {
+            // Acest constructor va fi apelat de designer-ul XAML
+            _categorii = new ObservableCollection<Categorie>();
+            _numeCategorieNoua = "Nume Test"; // Valoare de test
+
+            // Poți adăuga date de test în _categorii dacă vrei să le vezi în designer
+            if (DesignerProperties.GetIsInDesignMode(new DependencyObject()))
+            {
+                _categorii.Add(new Categorie { Nume = "Categorie Test 1", EsteActiv = true });
+                _categorii.Add(new Categorie { Nume = "Categorie Test 2", EsteActiv = true });
+                _selectedCategorie = _categorii[0];
+            }
+
+            // Inițializează comenzile cu implementări goale sau care nu aruncă excepții în design time
+            LoadCategoriesCommand = new AsyncRelayCommand(async () => await Task.CompletedTask);
+            AddCategoryCommand = new AsyncRelayCommand(async () => await Task.CompletedTask, () => !string.IsNullOrWhiteSpace(NumeCategorieNoua));
+            DeleteCategoryCommand = new AsyncRelayCommand(async () => await Task.CompletedTask, () => SelectedCategorie != null);
+        }
+
+        // Constructor pentru Runtime (cu dependențe injectate)
         public CategoriesTestViewModel(ICategorieRepository categorieRepository)
         {
-            _categorieRepository = categorieRepository;
+            _categorieRepository = categorieRepository; // Repository-ul real
 
             _categorii = new ObservableCollection<Categorie>();
             _numeCategorieNoua = string.Empty;
@@ -38,22 +61,6 @@ namespace RestaurantManagerApp.ViewModels
             LoadCategoriesCommand = new AsyncRelayCommand(LoadCategoriesAsync);
             AddCategoryCommand = new AsyncRelayCommand(AddCategoryAsync, CanAddCategory);
             DeleteCategoryCommand = new AsyncRelayCommand(DeleteCategoryAsync, CanDeleteCategory);
-
-            // Ascultă schimbările la NumeCategorieNoua pentru a re-evalua CanAddCategory
-            // (Modul CommunityToolkit.Mvvm de a face asta e prin atribute sau manual PropertyChanged)
-            // Vom re-evalua CanExecute manual la schimbarea textului pentru simplitate aici
-            // sau folosim [NotifyCanExecuteChangedFor(nameof(AddCategoryCommand))] pe NumeCategorieNoua
-            // dacă am face NumeCategorieNoua o proprietate generată cu [ObservableProperty]
-            // și comanda ar depinde de ea. Pentru moment, CanAddCategory se bazează pe NumeCategorieNoua.
-            // Am adăugat [ObservableProperty] la _numeCategorieNoua, deci putem face:
-            // PropertyChanged += (s, e) => { if (e.PropertyName == nameof(NumeCategorieNoua)) AddCategoryCommand.NotifyCanExecuteChanged(); };
-            // Sau, mai simplu, folosim atributul direct pe comandă (necesită ca și comanda să fie proprietate generată sau să aibă atribut)
-            // Deoarece comenzile sunt definite ca proprietăți simple, vom re-evalua CanExecute manual la schimbarea textului în XAML (prin UpdateSourceTrigger=PropertyChanged)
-            // și vom apela NotifyCanExecuteChanged() dacă e necesar din setter-ul proprietății _numeCategorieNoua.
-            // Cu [ObservableProperty] pe _numeCategorieNoua, sursa generată va apela OnPropertyChanged.
-            // Vom adăuga manual NotifyCanExecuteChanged în setter-ul generat (nu e ideal, dar e o opțiune).
-            // Alternativ, mai curat, este ca metoda CanExecute să fie reevaluată de UI la fiecare interacțiune.
-            // Pentru simplificare acum, vom lăsa așa și ne bazăm pe reevaluarea automată la focus/interacțiune.
         }
 
         // Metoda apelată la schimbarea proprietății NumeCategorieNoua (generată de [ObservableProperty])
@@ -68,6 +75,7 @@ namespace RestaurantManagerApp.ViewModels
 
         private async Task LoadCategoriesAsync()
         {
+            if (_categorieRepository == null) return;
             var categoriesList = await _categorieRepository.GetAllActiveAsync();
             Categorii.Clear();
             foreach (var cat in categoriesList)

@@ -3,18 +3,18 @@ using CommunityToolkit.Mvvm.Input;
 using RestaurantManagerApp.DataAccess;
 using RestaurantManagerApp.Models;
 using System.Collections.ObjectModel;
-using System.ComponentModel.DataAnnotations; // Pentru atribute de validare
+using System.ComponentModel; // Necesar pentru DesignerProperties
+using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
 
 namespace RestaurantManagerApp.ViewModels
 {
-    // Folosim partial class pentru CommunityToolkit.Mvvm source generators
-    public partial class CategoryManagementViewModel : ObservableValidator // ObservableValidator pentru validări
+    public partial class CategoryManagementViewModel : ObservableValidator
     {
-        private readonly ICategorieRepository _categorieRepository;
-        private Categorie? _originalCategorie; // Pentru a putea anula editarea
+        private readonly ICategorieRepository? _categorieRepository; // Nullable pentru design time
+        private Categorie? _originalCategorie;
 
         [ObservableProperty]
         private ObservableCollection<Categorie> _categorii;
@@ -24,122 +24,151 @@ namespace RestaurantManagerApp.ViewModels
         [NotifyCanExecuteChangedFor(nameof(DeleteCategoryCommand))]
         private Categorie? _selectedCategorie;
 
-        // Proprietăți pentru formularul de adăugare/editare
-        // Am adăugat și validări folosind atribute
-        private string _formNume = string.Empty;
+        [ObservableProperty]
         [Required(ErrorMessage = "Numele categoriei este obligatoriu.")]
         [MaxLength(100, ErrorMessage = "Numele nu poate depăși 100 de caractere.")]
-        [NotifyDataErrorInfo] // Important pentru ObservableValidator
-        public string FormNume
-        {
-            get => _formNume;
-            set
-            {
-                SetProperty(ref _formNume, value, true); // Al treilea parametru true pentru a valida la schimbare
-                AddNewCategoryCommand.NotifyCanExecuteChanged(); // Sau SaveChangesCommand dacă e în mod editare
-                SaveChangesCommand.NotifyCanExecuteChanged();
-            }
-        }
-
-        private bool _formEsteActiv = true;
         [NotifyDataErrorInfo]
-        public bool FormEsteActiv
-        {
-            get => _formEsteActiv;
-            set => SetProperty(ref _formEsteActiv, value, true);
-        }
+        [NotifyCanExecuteChangedFor(nameof(AddNewCategoryCommand))]
+        [NotifyCanExecuteChangedFor(nameof(SaveChangesCommand))]
+        private string _formNume = string.Empty;
 
+        [ObservableProperty]
+        // Am eliminat [NotifyDataErrorInfo] de aici dacă nu sunt validări specifice
+        [NotifyCanExecuteChangedFor(nameof(SaveChangesCommand))]
+        private bool _formEsteActiv = true;
 
         [ObservableProperty]
         private bool _isEditMode = false;
 
+        public bool IsAddMode => !IsEditMode;
 
         public IAsyncRelayCommand LoadCategoriesCommand { get; }
-        public IRelayCommand PrepareNewCategoryCommand { get; } // Pregătește formularul pentru o nouă categorie
-        public IAsyncRelayCommand AddNewCategoryCommand { get; } // Adaugă efectiv noua categorie
-        public IAsyncRelayCommand SaveChangesCommand { get; }   // Salvează modificările la o categorie existentă
+        public IRelayCommand PrepareNewCategoryCommand { get; }
+        public IAsyncRelayCommand AddNewCategoryCommand { get; }
+        public IAsyncRelayCommand SaveChangesCommand { get; }
         public IAsyncRelayCommand DeleteCategoryCommand { get; }
         public IRelayCommand CancelEditCommand { get; }
 
+        // Constructor pentru Design Time
+        public CategoryManagementViewModel()
+        {
+            System.Diagnostics.Debug.WriteLine("CategoryManagementViewModel DesignTime Constructor Called");
+            _categorii = new ObservableCollection<Categorie>();
+            // Inițializări minime pentru câmpurile legate în UI, pentru a evita NullReference la binding
+            _formNume = "Design Nume";
+            _formEsteActiv = true;
+            _isEditMode = false; // Sau true, pentru a testa ambele stări ale UI-ului
+
+            if (DesignerProperties.GetIsInDesignMode(new DependencyObject()))
+            {
+                _categorii.Add(new Categorie { Nume = "Design Categorie 1" });
+                _categorii.Add(new Categorie { Nume = "Design Categorie 2" });
+            }
+
+            // Inițializează comenzile cu implementări sigure (care nu fac nimic sau fac operații sigure)
+            LoadCategoriesCommand = new AsyncRelayCommand(async () => await Task.CompletedTask);
+            PrepareNewCategoryCommand = new RelayCommand(() => { IsEditMode = false; FormNume = "Nou Design"; });
+            AddNewCategoryCommand = new AsyncRelayCommand(async () => await Task.CompletedTask, () => true); // Presupunem că e valid în design
+            SaveChangesCommand = new AsyncRelayCommand(async () => await Task.CompletedTask, () => true); // Presupunem că e valid în design
+            DeleteCategoryCommand = new AsyncRelayCommand(async () => await Task.CompletedTask, () => true); // Presupunem că e valid în design
+            CancelEditCommand = new RelayCommand(() => { IsEditMode = false; FormNume = "Anulat Design"; });
+
+            // Nu apela ValidateAllProperties() aici decât dacă ești sigur că nu va genera erori
+            // din cauza lipsei contextului de runtime. Adesea, pentru design time, e mai bine să eviți.
+        }
+
+        // Constructor pentru Runtime
         public CategoryManagementViewModel(ICategorieRepository categorieRepository)
         {
+            System.Diagnostics.Debug.WriteLine("CategoryManagementViewModel Runtime Constructor Called");
             _categorieRepository = categorieRepository;
             _categorii = new ObservableCollection<Categorie>();
+            // FormNume și FormEsteActiv sunt inițializate de câmpurile lor cu [ObservableProperty]
 
             LoadCategoriesCommand = new AsyncRelayCommand(LoadCategoriesAsync);
-            PrepareNewCategoryCommand = new RelayCommand(PrepareFormForNewCategory);
+            PrepareNewCategoryCommand = new RelayCommand(ExecutePrepareNewCategory);
             AddNewCategoryCommand = new AsyncRelayCommand(ExecuteAddCategoryAsync, CanExecuteAddOrSave);
             SaveChangesCommand = new AsyncRelayCommand(ExecuteUpdateCategoryAsync, CanExecuteAddOrSave);
             DeleteCategoryCommand = new AsyncRelayCommand(ExecuteDeleteCategoryAsync, CanExecuteDelete);
             CancelEditCommand = new RelayCommand(ExecuteCancelEdit);
 
-            // Inițializăm ObservableValidator
-            ValidateAllProperties();
+            ExecutePrepareNewCategory();
+            ValidateAllProperties(); // La runtime, validarea este importantă
         }
 
-        // Acest "partial method" este apelat automat de [ObservableProperty] când SelectedCategorie se schimbă
         partial void OnSelectedCategorieChanged(Categorie? value)
         {
             if (value != null)
             {
                 IsEditMode = true;
-                _originalCategorie = new Categorie // Copiem valorile originale pentru anulare
-                {
-                    CategorieID = value.CategorieID,
-                    Nume = value.Nume,
-                    EsteActiv = value.EsteActiv
-                };
+                _originalCategorie = new Categorie { CategorieID = value.CategorieID, Nume = value.Nume, EsteActiv = value.EsteActiv };
                 FormNume = value.Nume;
                 FormEsteActiv = value.EsteActiv;
+                ClearErrors();
             }
             else
             {
-                PrepareFormForNewCategory(); // Dacă deselectăm, pregătim pentru adăugare
+                if (IsEditMode) // Doar dacă eram în editare și s-a deselectat
+                {
+                    ExecutePrepareNewCategory();
+                }
             }
-            // Notificăm comenzile care depind de SelectedCategorie
-            DeleteCategoryCommand.NotifyCanExecuteChanged();
-            SaveChangesCommand.NotifyCanExecuteChanged(); // CanExecuteAddOrSave depinde și de IsEditMode
-            AddNewCategoryCommand.NotifyCanExecuteChanged();
         }
 
+        partial void OnIsEditModeChanged(bool value)
+        {
+            OnPropertyChanged(nameof(IsAddMode));
+            AddNewCategoryCommand.NotifyCanExecuteChanged();
+            SaveChangesCommand.NotifyCanExecuteChanged();
+        }
 
         private async Task LoadCategoriesAsync()
         {
-            var categoriesList = await _categorieRepository.GetAllActiveAsync(); // Sau toate, dacă vrem să le activăm/dezactivăm
+            if (_categorieRepository == null) // Protecție pentru design time
+            {
+                if (!DesignerProperties.GetIsInDesignMode(new DependencyObject()))
+                {
+                    // E o problemă la runtime dacă repository-ul e null și nu suntem în design mode
+                    MessageBox.Show("Eroare: Repository-ul de categorii nu este inițializat.", "Eroare Critică", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+                return;
+            }
+
+            var categoriesList = await _categorieRepository.GetAllActiveAsync();
             Categorii.Clear();
             foreach (var cat in categoriesList.OrderBy(c => c.Nume))
             {
                 Categorii.Add(cat);
             }
-            PrepareFormForNewCategory(); // Resetează formularul după încărcare
+            ExecutePrepareNewCategory();
         }
 
-        private void PrepareFormForNewCategory()
+        private void ExecutePrepareNewCategory()
         {
             IsEditMode = false;
-            SelectedCategorie = null; // Deselectează orice categorie din listă
+            // SelectedCategorie = null; // Setarea IsEditMode = false și logica din OnSelectedCategorieChanged ar trebui să gestioneze asta,
+            // dar pentru a fi explicit, o putem face aici.
+            // Totuși, dacă SelectedCategorie e legat la ListBox, setarea lui la null aici
+            // poate cauza un ciclu dacă OnSelectedCategorieChanged apelează PrepareNewCategory.
+            // Este mai sigur să fie gestionat prin IsEditMode și interacțiunea utilizatorului.
+            // Lasă ca OnSelectedCategorieChanged(null) să facă treaba dacă e cazul.
             _originalCategorie = null;
             FormNume = string.Empty;
             FormEsteActiv = true;
-            ClearErrors(); // Șterge erorile de validare de pe formular
-            AddNewCategoryCommand.NotifyCanExecuteChanged();
-            SaveChangesCommand.NotifyCanExecuteChanged();
+            ClearErrors();
         }
 
         private bool CanExecuteAddOrSave()
         {
-            // Verifică dacă formularul este valid
-            ValidateAllProperties(); // Forțează validarea
+            ValidateAllProperties();
             if (HasErrors) return false;
 
             if (IsEditMode)
             {
-                return SelectedCategorie != null && // Trebuie să avem o categorie selectată
-                       !string.IsNullOrWhiteSpace(FormNume) && // Numele nu e gol
-                       (_originalCategorie != null && // Avem originalul pentru comparație
-                        (FormNume != _originalCategorie.Nume || FormEsteActiv != _originalCategorie.EsteActiv)); // Și ceva s-a schimbat
+                return SelectedCategorie != null && _originalCategorie != null &&
+                       (FormNume != _originalCategorie.Nume || FormEsteActiv != _originalCategorie.EsteActiv);
             }
-            else // Mod Adăugare
+            else
             {
                 return !string.IsNullOrWhiteSpace(FormNume);
             }
@@ -147,83 +176,50 @@ namespace RestaurantManagerApp.ViewModels
 
         private async Task ExecuteAddCategoryAsync()
         {
-            if (!CanExecuteAddOrSave()) return;
-
+            if (!CanExecuteAddOrSave() || _categorieRepository == null) return;
             if (await _categorieRepository.NameExistsAsync(FormNume))
             {
                 MessageBox.Show($"Categoria '{FormNume}' există deja.", "Nume Duplicat", MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
             }
-
-            var newCategory = new Categorie
-            {
-                Nume = FormNume,
-                EsteActiv = FormEsteActiv // Deși în repository e default true, o setăm explicit
-            };
+            var newCategory = new Categorie { Nume = FormNume, EsteActiv = FormEsteActiv };
             await _categorieRepository.AddAsync(newCategory);
-            await LoadCategoriesAsync(); // Reîncarcă și resetează formularul
+            await LoadCategoriesAsync();
         }
 
         private async Task ExecuteUpdateCategoryAsync()
         {
-            if (!CanExecuteAddOrSave() || SelectedCategorie == null || _originalCategorie == null) return;
-
-            // Verifică dacă numele nou (dacă s-a schimbat) există deja pentru alt ID
+            if (!CanExecuteAddOrSave() || SelectedCategorie == null || _originalCategorie == null || _categorieRepository == null) return;
             if (FormNume != _originalCategorie.Nume && await _categorieRepository.NameExistsAsync(FormNume, SelectedCategorie.CategorieID))
             {
-                MessageBox.Show($"Categoria '{FormNume}' există deja.", "Nume Duplicat", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show($"Categoria '{FormNume}' există deja pentru un alt ID.", "Nume Duplicat", MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
             }
-
-            // Actualizăm direct obiectul SelectedCategorie cu noile valori din formular
-            // Acest lucru e OK dacă SelectedCategorie este chiar obiectul din colecția _categorii.
-            // Dar pentru o separare mai bună și pentru a folosi _originalCategorie, creăm un obiect actualizat.
-            var updatedCategory = new Categorie
-            {
-                CategorieID = SelectedCategorie.CategorieID,
-                Nume = FormNume,
-                EsteActiv = FormEsteActiv
-            };
-
+            var updatedCategory = new Categorie { CategorieID = SelectedCategorie.CategorieID, Nume = FormNume, EsteActiv = FormEsteActiv };
             await _categorieRepository.UpdateAsync(updatedCategory);
-            await LoadCategoriesAsync(); // Reîncarcă și resetează formularul
+            await LoadCategoriesAsync();
         }
-
 
         private bool CanExecuteDelete()
         {
-            return SelectedCategorie != null;
+            return SelectedCategorie != null && IsEditMode;
         }
 
         private async Task ExecuteDeleteCategoryAsync()
         {
-            if (!CanExecuteDelete() || SelectedCategorie == null) return;
-
+            if (!CanExecuteDelete() || SelectedCategorie == null || _categorieRepository == null) return;
             var result = MessageBox.Show($"Sigur doriți să ștergeți (marcați ca inactivă) categoria '{SelectedCategorie.Nume}'?",
                                          "Confirmare Ștergere", MessageBoxButton.YesNo, MessageBoxImage.Warning);
             if (result == MessageBoxResult.Yes)
             {
                 await _categorieRepository.DeleteAsync(SelectedCategorie.CategorieID);
-                await LoadCategoriesAsync(); // Reîncarcă și resetează formularul
+                await LoadCategoriesAsync();
             }
         }
 
         private void ExecuteCancelEdit()
         {
-            // Resetează formularul la starea de adăugare nouă
-            // Sau, dacă eram în mod editare și avem _originalCategorie, putem reveni la acele valori
-            // if (IsEditMode && _originalCategorie != null)
-            // {
-            //     FormNume = _originalCategorie.Nume;
-            //     FormEsteActiv = _originalCategorie.EsteActiv;
-            //     // Poate deselectăm SelectedCategorie sau lăsăm așa pentru a putea re-edita
-            // }
-            // else
-            // {
-            //     PrepareFormForNewCategory();
-            // }
-            // Pentru simplitate, acum doar resetăm la "new"
-            PrepareFormForNewCategory();
+            ExecutePrepareNewCategory();
         }
 
         public async Task InitializeAsync()
