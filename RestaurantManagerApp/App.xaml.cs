@@ -11,7 +11,7 @@ namespace RestaurantManagerApp
 {
     public partial class App : Application
     {
-        public static ServiceProvider ServiceProvider { get; private set; }
+        public static ServiceProvider? ServiceProvider { get; private set; }
 
         public App()
         {
@@ -33,9 +33,9 @@ namespace RestaurantManagerApp
 
             services.AddTransient<ICategorieRepository, CategorieRepository>();
 
-            services.AddTransient<CategoriesTestViewModel>();
+            services.AddTransient<CategoryManagementViewModel>();
 
-            services.AddTransient<CategoriesTestView>();
+            services.AddTransient<CategoryManagementView>();
 
             // Aici vom înregistra și alte servicii și ViewModels pe măsură ce le creăm:
             // Exemplu (decomentează și adaptează când le creezi):
@@ -51,8 +51,8 @@ namespace RestaurantManagerApp
         {
             base.OnStartup(e);
 
-            var categoriesTestView = ServiceProvider.GetService<CategoriesTestView>();
-            categoriesTestView?.Show();
+            var categoryManagementView = ServiceProvider.GetService<CategoryManagementView>();
+            categoryManagementView?.Show();
 
             // Deschide fereastra principală
             // Dacă ai înregistrat MainWindow pentru DI:
