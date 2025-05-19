@@ -1,0 +1,199 @@
+﻿<Window x:Class="RestaurantManagerApp.Views.PreparatManagementView"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:RestaurantManagerApp.Views"
+        xmlns:vm="clr-namespace:RestaurantManagerApp.ViewModels"
+        xmlns:converters="clr-namespace:RestaurantManagerApp.Converters"
+        mc:Ignorable="d"
+        Title="Management Preparate" Height="800" Width="950" MinHeight="600" MinWidth="850"
+        d:DataContext="{d:DesignInstance Type=vm:PreparatManagementViewModel, IsDesignTimeCreatable=True}"
+        Loaded="Window_Loaded">
+
+    <Window.Resources>
+        <converters:BooleanToEditModeHeaderConverter x:Key="BooleanToEditModeHeaderConverter"
+                                                     TrueHeader="Editează Preparat"
+                                                     FalseHeader="Adaugă Preparat Nou"
+                                                     FallbackHeader="Formular Preparat"/>
+        <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
+    </Window.Resources>
+
+    <Grid Margin="15">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="400" MinWidth="300"/>
+            <!-- Lista de preparate -->
+            <ColumnDefinition Width="*"/>
+            <!-- Formularul de editare/adăugare -->
+        </Grid.ColumnDefinitions>
+
+        <!-- Coloana Stânga: Lista de Preparate -->
+        <Grid Grid.Column="0" Margin="0,0,10,0">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+
+            <TextBlock Grid.Row="0" Text="Preparate Existente" FontSize="16" FontWeight="Bold" Margin="0,0,0,10"/>
+
+            <ListBox Grid.Row="1" ItemsSource="{Binding Preparate}"
+                     SelectedItem="{Binding SelectedPreparat}"
+                     BorderThickness="1" BorderBrush="Gray">
+                <ListBox.ItemTemplate>
+                    <DataTemplate>
+                        <StackPanel Orientation="Vertical">
+                            <TextBlock Text="{Binding Denumire}" FontWeight="Bold"/>
+                            <TextBlock Text="{Binding Categorie.Nume, FallbackValue='Fără categorie'}" FontSize="10" Foreground="Gray"/>
+                            <TextBlock Text="{Binding Pret, StringFormat={}{0:C}, FallbackValue='N/A'}" FontSize="10"/>
+                        </StackPanel>
+                    </DataTemplate>
+                </ListBox.ItemTemplate>
+            </ListBox>
+
+            <Button Grid.Row="2" Content="Adaugă Preparat Nou"
+                    Command="{Binding PrepareNewPreparatCommand}"
+                    Margin="0,10,0,0" Padding="5"/>
+        </Grid>
+
+        <!-- Coloana Dreapta: Formular de Adăugare/Editare -->
+        <GroupBox Grid.Column="1"
+                  Header="{Binding IsEditMode, Converter={StaticResource BooleanToEditModeHeaderConverter}}"
+                  Padding="10" BorderThickness="1" BorderBrush="Gray">
+            <ScrollViewer VerticalScrollBarVisibility="Auto">
+                <Grid DataContext="{Binding}">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <!-- Denumire -->
+                        <RowDefinition Height="Auto"/>
+                        <!-- Eroare Denumire -->
+                        <RowDefinition Height="Auto"/>
+                        <!-- Preț -->
+                        <RowDefinition Height="Auto"/>
+                        <!-- Eroare Preț -->
+                        <RowDefinition Height="Auto"/>
+                        <!-- Cantitate Porție -->
+                        <RowDefinition Height="Auto"/>
+                        <!-- Eroare Cantitate Porție -->
+                        <RowDefinition Height="Auto"/>
+                        <!-- Stoc Total -->
+                        <RowDefinition Height="Auto"/>
+                        <!-- Eroare Stoc Total -->
+                        <RowDefinition Height="Auto"/>
+                        <!-- Unitate Măsură Stoc -->
+                        <RowDefinition Height="Auto"/>
+                        <!-- Eroare Unitate Măsură -->
+                        <RowDefinition Height="Auto"/>
+                        <!-- Categorie -->
+                        <RowDefinition Height="Auto"/>
+                        <!-- Eroare Categorie -->
+                        <RowDefinition Height="Auto"/>
+                        <!-- Descriere -->
+                        <RowDefinition Height="Auto"/>
+                        <!-- Cale Imagine -->
+                        <RowDefinition Height="Auto"/>
+                        <!-- Alergeni Label -->
+                        <RowDefinition Height="120"/>
+                        <!-- Alergeni ListBox -->
+                        <RowDefinition Height="Auto"/>
+                        <!-- Activ CheckBox -->
+                        <RowDefinition Height="Auto"/>
+                        <!-- ID (doar în edit mode) -->
+                        <RowDefinition Height="*"/>
+                        <!-- Spațiu gol -->
+                        <RowDefinition Height="Auto"/>
+                        <!-- Butoane de acțiune -->
+                    </Grid.RowDefinitions>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" MinWidth="120"/>
+                        <!-- Etichete -->
+                        <ColumnDefinition Width="*"/>
+                        <!-- Controale de input -->
+                    </Grid.ColumnDefinitions>
+
+                    <Label Grid.Row="0" Grid.Column="0" Content="_Denumire:" Target="{Binding ElementName=FormDenumireTextBox}" VerticalAlignment="Center" Margin="0,0,10,5"/>
+                    <TextBox x:Name="FormDenumireTextBox" Grid.Row="0" Grid.Column="1"
+                             Text="{Binding FormDenumire, UpdateSourceTrigger=PropertyChanged, ValidatesOnNotifyDataErrors=True}" Margin="0,0,0,5"/>
+                    <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding ElementName=FormDenumireTextBox, Path=(Validation.Errors).CurrentItem.ErrorContent}" Foreground="Red" FontSize="10" Margin="0,0,0,10"/>
+
+                    <Label Grid.Row="2" Grid.Column="0" Content="_Preț:" Target="{Binding ElementName=FormPretTextBox}" VerticalAlignment="Center" Margin="0,0,10,5"/>
+                    <TextBox x:Name="FormPretTextBox" Grid.Row="2" Grid.Column="1"
+                             Text="{Binding FormPret, UpdateSourceTrigger=PropertyChanged, ValidatesOnNotifyDataErrors=True, StringFormat=N2}" Margin="0,0,0,5"/>
+                    <TextBlock Grid.Row="3" Grid.Column="1" Text="{Binding ElementName=FormPretTextBox, Path=(Validation.Errors).CurrentItem.ErrorContent}" Foreground="Red" FontSize="10" Margin="0,0,0,10"/>
+
+                    <Label Grid.Row="4" Grid.Column="0" Content="Cantitate _Porție:" Target="{Binding ElementName=FormCantitatePortieTextBox}" VerticalAlignment="Center" Margin="0,0,10,5"/>
+                    <TextBox x:Name="FormCantitatePortieTextBox" Grid.Row="4" Grid.Column="1"
+                             Text="{Binding FormCantitatePortie, UpdateSourceTrigger=PropertyChanged, ValidatesOnNotifyDataErrors=True}" Margin="0,0,0,5"/>
+                    <TextBlock Grid.Row="5" Grid.Column="1" Text="{Binding ElementName=FormCantitatePortieTextBox, Path=(Validation.Errors).CurrentItem.ErrorContent}" Foreground="Red" FontSize="10" Margin="0,0,0,10"/>
+
+                    <Label Grid.Row="6" Grid.Column="0" Content="_Stoc Total:" Target="{Binding ElementName=FormStocTextBox}" VerticalAlignment="Center" Margin="0,0,10,5"/>
+                    <TextBox x:Name="FormStocTextBox" Grid.Row="6" Grid.Column="1"
+                             Text="{Binding FormCantitateTotalaStoc, UpdateSourceTrigger=PropertyChanged, ValidatesOnNotifyDataErrors=True, StringFormat=N2}" Margin="0,0,0,5"/>
+                    <TextBlock Grid.Row="7" Grid.Column="1" Text="{Binding ElementName=FormStocTextBox, Path=(Validation.Errors).CurrentItem.ErrorContent}" Foreground="Red" FontSize="10" Margin="0,0,0,10"/>
+
+                    <Label Grid.Row="8" Grid.Column="0" Content="_Unitate Măsură Stoc:" Target="{Binding ElementName=FormUnitateMasuraTextBox}" VerticalAlignment="Center" Margin="0,0,10,5"/>
+                    <TextBox x:Name="FormUnitateMasuraTextBox" Grid.Row="8" Grid.Column="1"
+                             Text="{Binding FormUnitateMasuraStoc, UpdateSourceTrigger=PropertyChanged, ValidatesOnNotifyDataErrors=True}" Margin="0,0,0,5"/>
+                    <TextBlock Grid.Row="9" Grid.Column="1" Text="{Binding ElementName=FormUnitateMasuraTextBox, Path=(Validation.Errors).CurrentItem.ErrorContent}" Foreground="Red" FontSize="10" Margin="0,0,0,10"/>
+
+                    <Label Grid.Row="10" Grid.Column="0" Content="Ca_tegorie:" Target="{Binding ElementName=FormCategorieComboBox}" VerticalAlignment="Center" Margin="0,0,10,5"/>
+                    <ComboBox x:Name="FormCategorieComboBox" Grid.Row="10" Grid.Column="1"
+                              ItemsSource="{Binding ListaCategoriiDisponibile}"
+                              SelectedItem="{Binding FormSelectedCategorie, ValidatesOnNotifyDataErrors=True}"
+                              DisplayMemberPath="Nume"
+                              SelectedValuePath="CategorieID" Margin="0,0,0,5"/>
+                    <TextBlock Grid.Row="11" Grid.Column="1" Text="{Binding ElementName=FormCategorieComboBox, Path=(Validation.Errors).CurrentItem.ErrorContent}" Foreground="Red" FontSize="10" Margin="0,0,0,10"/>
+
+                    <Label Grid.Row="12" Grid.Column="0" Content="_Descriere:" Target="{Binding ElementName=FormDescriereTextBox}" VerticalAlignment="Top" Margin="0,5,10,5"/>
+                    <TextBox x:Name="FormDescriereTextBox" Grid.Row="12" Grid.Column="1"
+                             Text="{Binding FormDescriere, UpdateSourceTrigger=PropertyChanged, ValidatesOnNotifyDataErrors=True}" Margin="0,5,0,5"
+                             TextWrapping="Wrap" AcceptsReturn="True" MinHeight="60"/>
+
+                    <Label Grid.Row="13" Grid.Column="0" Content="Cale _Imagine:" Target="{Binding ElementName=FormImagineTextBox}" VerticalAlignment="Center" Margin="0,0,10,5"/>
+                    <Grid Grid.Row="13" Grid.Column="1" Margin="0,0,0,10">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBox x:Name="FormImagineTextBox" Grid.Column="0"
+             Text="{Binding FormCaleImagine, UpdateSourceTrigger=PropertyChanged, ValidatesOnNotifyDataErrors=True}"/>
+                        <Button Grid.Column="1" Content="..." Command="{Binding SelectImageCommand}" Margin="5,0,0,0" Padding="5,2" ToolTip="Selectează Imagine"/>
+                    </Grid>
+                    
+                    <TextBlock Grid.Row="14" Grid.Column="0" Text="Alergeni:" VerticalAlignment="Top" Margin="0,5,10,5"/>
+                    <ListBox Grid.Row="15" Grid.Column="0" Grid.ColumnSpan="2" MinHeight="100"
+                             ItemsSource="{Binding ListaAlergeniDisponibili}" Margin="0,0,0,10"
+                             BorderThickness="1" BorderBrush="LightGray" ScrollViewer.VerticalScrollBarVisibility="Auto">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <CheckBox Content="{Binding Alergen.Nume}" IsChecked="{Binding IsSelected}"/>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+
+                    <TextBlock Grid.Row="16" Grid.Column="0" Text="Activ:" VerticalAlignment="Center" Margin="0,0,10,5"/>
+                    <CheckBox Grid.Row="16" Grid.Column="1"
+                              IsChecked="{Binding FormEsteActiv}"
+                              VerticalAlignment="Center" Margin="0,0,0,10"/>
+
+                    <TextBlock Grid.Row="17" Grid.Column="0" Text="ID Preparat:" VerticalAlignment="Center" Margin="0,0,10,5"
+                               Visibility="{Binding IsEditMode, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                    <TextBlock Grid.Row="17" Grid.Column="1" Text="{Binding SelectedPreparat.PreparatID, Mode=OneWay, FallbackValue='-'}"
+                               VerticalAlignment="Center" Margin="0,0,0,10" FontWeight="Bold"
+                               Visibility="{Binding IsEditMode, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+
+                    <!-- Butoane de Acțiune pentru Formular -->
+                    <StackPanel Grid.Row="19" Grid.Column="0" Grid.ColumnSpan="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,10,0,0">
+                        <Button Content="Salvează" Command="{Binding SaveChangesCommand}" Margin="0,0,10,0" Padding="10,5"
+                                Visibility="{Binding IsEditMode, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                        <Button Content="Adaugă" Command="{Binding AddNewPreparatCommand}" Margin="0,0,10,0" Padding="10,5"
+                                Visibility="{Binding IsAddMode, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                        <Button Content="Anulează" Command="{Binding CancelEditCommand}" Margin="0,0,10,0" Padding="10,5"/>
+                        <Button Content="Șterge" Command="{Binding DeletePreparatCommand}" Padding="10,5" Background="LightCoral"
+                                Visibility="{Binding IsEditMode, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                    </StackPanel>
+                </Grid>
+            </ScrollViewer>
+        </GroupBox>
+    </Grid>
+</Window>

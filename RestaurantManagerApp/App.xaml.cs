@@ -6,6 +6,8 @@ using RestaurantManagerApp.Views;
 // using RestaurantManagerApp.ViewModels;
 // using RestaurantManagerApp.Services;
 using System.Windows;
+using System.Globalization;
+using System.Threading;
 
 namespace RestaurantManagerApp
 {
@@ -15,6 +17,14 @@ namespace RestaurantManagerApp
 
         public App()
         {
+            CultureInfo ci = new CultureInfo("ro-RO");
+            Thread.CurrentThread.CurrentCulture = ci;
+            Thread.CurrentThread.CurrentUICulture = ci;
+            FrameworkElement.LanguageProperty.OverrideMetadata(
+                typeof(FrameworkElement),
+                new FrameworkPropertyMetadata(
+                    System.Windows.Markup.XmlLanguage.GetLanguage(ci.IetfLanguageTag)));
+            InitializeComponent();
             ServiceCollection services = new ServiceCollection();
             ConfigureServices(services);
             ServiceProvider = services.BuildServiceProvider();
@@ -39,6 +49,10 @@ namespace RestaurantManagerApp
             services.AddTransient<AlergenManagementViewModel>();
             services.AddTransient<AlergenManagementView>();
 
+            services.AddTransient<IPreparatRepository, PreparatRepository>();
+            services.AddTransient<PreparatManagementViewModel>();
+            services.AddTransient<PreparatManagementView>();
+
             // Aici vom înregistra și alte servicii și ViewModels pe măsură ce le creăm:
             // Exemplu (decomentează și adaptează când le creezi):
             // services.AddTransient<IMainWindowViewModel, MainWindowViewModel>(); // Dacă ai o interfață
@@ -56,8 +70,11 @@ namespace RestaurantManagerApp
             //var categoryManagementView = ServiceProvider.GetService<CategoryManagementView>();
             //categoryManagementView?.Show();
 
-            var alergenManagementView = ServiceProvider.GetService<AlergenManagementView>();
-            alergenManagementView?.Show();
+            //var alergenManagementView = ServiceProvider.GetService<AlergenManagementView>();
+            //alergenManagementView?.Show();
+
+            var preparatManagementView = ServiceProvider.GetService<PreparatManagementView>();
+            preparatManagementView?.Show();
 
             // Deschide fereastra principală
             // Dacă ai înregistrat MainWindow pentru DI:

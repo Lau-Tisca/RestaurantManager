@@ -59,9 +59,30 @@ namespace RestaurantManagerApp.Data
             modelBuilder.Entity<MeniuPreparat>().ToTable("tblMeniuPreparate");
 
             modelBuilder.Entity<Preparat>()
-                .HasMany(p => p.Alergeni)
-                .WithMany(a => a.Preparate) // Presupunând că Alergen are ICollection<Preparat> Preparate
-                .UsingEntity(j => j.ToTable("tblPreparateAlergeni"));
+                .HasMany(p => p.Alergeni) // Un Preparat are mulți Alergeni
+                .WithMany(a => a.Preparate) // Un Alergen este în multe Preparate
+                .UsingEntity<Dictionary<string, object>>( // Folosim un tip generic pentru tabela de joncțiune
+                    "tblPreparateAlergeni", // Numele tabelei de joncțiune în BD
+                    j => j
+                        .HasOne<Alergen>() // Entitatea din partea "many" (Alergeni)
+                        .WithMany() // Un Alergen poate avea multe legături în tabela de joncțiune
+                        .HasForeignKey("AlergenID") // Numele coloanei FK din tblPreparateAlergeni care referă tblAlergeni
+                        .HasPrincipalKey(nameof(Alergen.AlergenID)), // Cheia PK din tblAlergeni
+                    j => j
+                        .HasOne<Preparat>() // Entitatea din partea "many" (Preparate)
+                        .WithMany() // Un Preparat poate avea multe legături în tabela de joncțiune
+                        .HasForeignKey("PreparatID") // Numele coloanei FK din tblPreparateAlergeni care referă tblPreparate
+                        .HasPrincipalKey(nameof(Preparat.PreparatID)), // Cheia PK din tblPreparate
+                    j =>
+                    {
+                        j.HasKey("PreparatID", "AlergenID"); // Definirea cheii primare compuse pentru tabela de joncțiune
+                        j.ToTable("tblPreparateAlergeni"); // Asigură-te că numele tabelei e corect (redundant dacă e deja specificat mai sus)
+                    });
+
+            //modelBuilder.Entity<Preparat>()
+            //    .HasMany(p => p.Alergeni)
+            //    .WithMany(a => a.Preparate) // Presupunând că Alergen are ICollection<Preparat> Preparate
+            //    .UsingEntity(j => j.ToTable("tblPreparateAlergeni"));
 
             // Configurare cheie primară compusă pentru MeniuPreparat
             modelBuilder.Entity<MeniuPreparat>()
