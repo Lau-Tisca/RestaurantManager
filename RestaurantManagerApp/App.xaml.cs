@@ -57,6 +57,7 @@ namespace RestaurantManagerApp
             services.AddTransient<MeniuManagementViewModel>();
             services.AddTransient<MainViewModel>();
             services.AddTransient<MainWindow>();
+            services.AddTransient<EmployeeDashboardViewModel>();
 
             // Views (ca UserControls, nu Windows, dacă sunt în ContentControl)
             // Vom modifica acest aspect la pasul următor
