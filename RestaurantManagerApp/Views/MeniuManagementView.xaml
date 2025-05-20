@@ -1,4 +1,4 @@
-﻿<Window x:Class="RestaurantManagerApp.Views.MeniuManagementView"
+﻿<UserControl x:Class="RestaurantManagerApp.Views.MeniuManagementView"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
@@ -7,17 +7,15 @@
         xmlns:vm="clr-namespace:RestaurantManagerApp.ViewModels"
         xmlns:converters="clr-namespace:RestaurantManagerApp.Converters"
         mc:Ignorable="d"
-        Title="Management Meniuri" Height="750" Width="1100" MinHeight="650" MinWidth="900"
         d:DataContext="{d:DesignInstance Type=vm:MeniuManagementViewModel, IsDesignTimeCreatable=True}"
-        Loaded="Window_Loaded">
+        Loaded="UserControl_Loaded">
 
-    <Window.Resources>
+    <UserControl.Resources>
         <converters:BooleanToEditModeHeaderConverter x:Key="BooleanToEditModeHeaderConverter"
                                                      TrueHeader="Editează Meniu"
                                                      FalseHeader="Adaugă Meniu Nou"
                                                      FallbackHeader="Formular Meniu"/>
-        <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
-    </Window.Resources>
+    </UserControl.Resources>
 
     <Grid Margin="15">
         <Grid.ColumnDefinitions>
@@ -192,4 +190,4 @@
             </ScrollViewer>
         </GroupBox>
     </Grid>
-</Window>
+</UserControl>

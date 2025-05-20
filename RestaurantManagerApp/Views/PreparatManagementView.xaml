@@ -1,4 +1,4 @@
-﻿<Window x:Class="RestaurantManagerApp.Views.PreparatManagementView"
+﻿<UserControl x:Class="RestaurantManagerApp.Views.PreparatManagementView"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
@@ -7,17 +7,16 @@
         xmlns:vm="clr-namespace:RestaurantManagerApp.ViewModels"
         xmlns:converters="clr-namespace:RestaurantManagerApp.Converters"
         mc:Ignorable="d"
-        Title="Management Preparate" Height="800" Width="950" MinHeight="600" MinWidth="850"
         d:DataContext="{d:DesignInstance Type=vm:PreparatManagementViewModel, IsDesignTimeCreatable=True}"
-        Loaded="Window_Loaded">
+        Loaded="UserControl_Loaded">
 
-    <Window.Resources>
+    <UserControl.Resources>
         <converters:BooleanToEditModeHeaderConverter x:Key="BooleanToEditModeHeaderConverter"
                                                      TrueHeader="Editează Preparat"
                                                      FalseHeader="Adaugă Preparat Nou"
                                                      FallbackHeader="Formular Preparat"/>
         <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
-    </Window.Resources>
+    </UserControl.Resources>
 
     <Grid Margin="15">
         <Grid.ColumnDefinitions>
@@ -196,4 +195,4 @@
             </ScrollViewer>
         </GroupBox>
     </Grid>
-</Window>
+</UserControl>
