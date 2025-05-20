@@ -1,17 +1,17 @@
 ﻿using RestaurantManagerApp.ViewModels; 
 using System.Windows;
+using System.Windows.Controls;
 
 namespace RestaurantManagerApp.Views
 {
-    public partial class AlergenManagementView : Window
+    public partial class AlergenManagementView : UserControl
     {
         public AlergenManagementView(AlergenManagementViewModel viewModel)
         {
             InitializeComponent();
-            DataContext = viewModel;
         }
 
-        private async void Window_Loaded(object sender, RoutedEventArgs e)
+        private async void UserControl_Loaded(object sender, RoutedEventArgs e)
         {
             if (DataContext is AlergenManagementViewModel vm)
             {

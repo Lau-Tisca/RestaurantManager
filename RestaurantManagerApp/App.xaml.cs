@@ -4,7 +4,7 @@ using RestaurantManagerApp.DataAccess;
 using RestaurantManagerApp.ViewModels;
 using RestaurantManagerApp.Views;
 // using RestaurantManagerApp.ViewModels;
-// using RestaurantManagerApp.Services;
+using RestaurantManagerApp.Services;
 using System.Windows;
 using System.Globalization;
 using System.Threading;
@@ -24,7 +24,6 @@ namespace RestaurantManagerApp
                 typeof(FrameworkElement),
                 new FrameworkPropertyMetadata(
                     System.Windows.Markup.XmlLanguage.GetLanguage(ci.IetfLanguageTag)));
-            InitializeComponent();
             ServiceCollection services = new ServiceCollection();
             ConfigureServices(services);
             ServiceProvider = services.BuildServiceProvider();
@@ -40,36 +39,42 @@ namespace RestaurantManagerApp
             // Deoarece am configurat deja UseSqlServer în OnConfiguring din RestaurantContext,
             // un simplu AddDbContext<RestaurantContext>() ar trebui să fie suficient.
             services.AddDbContext<RestaurantContext>();
-
             services.AddTransient<ICategorieRepository, CategorieRepository>();
-            services.AddTransient<CategoryManagementViewModel>();
-            services.AddTransient<CategoryManagementView>();
-
             services.AddTransient<IAlergenRepository, AlergenRepository>();
-            services.AddTransient<AlergenManagementViewModel>();
-            services.AddTransient<AlergenManagementView>();
-
             services.AddTransient<IPreparatRepository, PreparatRepository>();
-            services.AddTransient<PreparatManagementViewModel>();
-            services.AddTransient<PreparatManagementView>();
-
             services.AddTransient<IMeniuRepository, MeniuRepository>();
+            services.AddTransient<IUtilizatorRepository, UtilizatorRepository>();
+
+            // Servicii
+            services.AddSingleton<IAuthenticationService, AuthenticationService>();
+
+            // ViewModels
+            services.AddTransient<LoginViewModel>();
+            services.AddTransient<RegistrationViewModel>();
+            services.AddTransient<CategoryManagementViewModel>();
+            services.AddTransient<AlergenManagementViewModel>();
+            services.AddTransient<PreparatManagementViewModel>();
             services.AddTransient<MeniuManagementViewModel>();
-            services.AddTransient<MeniuManagementView>();
+            services.AddTransient<MainViewModel>();
+            services.AddTransient<MainWindow>();
 
-            // Aici vom înregistra și alte servicii și ViewModels pe măsură ce le creăm:
-            // Exemplu (decomentează și adaptează când le creezi):
-            // services.AddTransient<IMainWindowViewModel, MainWindowViewModel>(); // Dacă ai o interfață
-            // services.AddTransient<MainWindowViewModel>(); // Dacă nu ai interfață și vrei o instanță nouă de fiecare dată
-            // services.AddSingleton<NumeleMeuServiciuSingleton>(); // Pentru servicii care trebuie să fie instanță unică
-
-            // Înregistrează fereastra principală (dacă vrei să o rezolvi prin DI)
-            // services.AddTransient<MainWindow>();
+            // Views (ca UserControls, nu Windows, dacă sunt în ContentControl)
+            // Vom modifica acest aspect la pasul următor
+            // Momentan, dacă sunt Windows, nu le înregistrăm aici pentru a fi puse în ContentControl.
+            // Le vom deschide direct dacă sunt Windows, sau le vom transforma în UserControl.
+            // Pentru DataTemplates, nu e nevoie să le înregistrăm în DI ca tipuri de View.
         }
 
         protected override void OnStartup(StartupEventArgs e)
         {
             base.OnStartup(e);
+
+            if (ServiceProvider == null)
+            {
+                MessageBox.Show("Eroare critică: ServiceProvider nu a fost inițializat.", "Eroare Pornire", MessageBoxButton.OK, MessageBoxImage.Error);
+                Shutdown();
+                return;
+            }
 
             //var categoryManagementView = ServiceProvider.GetService<CategoryManagementView>();
             //categoryManagementView?.Show();
@@ -80,13 +85,19 @@ namespace RestaurantManagerApp
             //var preparatManagementView = ServiceProvider.GetService<PreparatManagementView>();
             //preparatManagementView?.Show();
 
-            var meniuManagementView = ServiceProvider.GetService<MeniuManagementView>();
-            meniuManagementView?.Show();
+            //var meniuManagementView = ServiceProvider.GetService<MeniuManagementView>();
+            //meniuManagementView?.Show();
 
-            // Deschide fereastra principală
-            // Dacă ai înregistrat MainWindow pentru DI:
-            // var mainWindow = ServiceProvider.GetService<MainWindow>();
-            // mainWindow?.Show();
+            var mainWindow = ServiceProvider.GetService<MainWindow>();
+            if (mainWindow != null)
+            {
+                mainWindow.Show();
+            }
+            else
+            {
+                MessageBox.Show("Eroare critică: MainWindow nu a putut fi creată.", "Eroare Pornire", MessageBoxButton.OK, MessageBoxImage.Error);
+                Shutdown();
+            }
 
             //// Sau metoda tradițională, dacă nu vrei să o injectezi:
             //var mainWindow = new MainWindow();

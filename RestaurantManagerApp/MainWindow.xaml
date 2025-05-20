@@ -4,9 +4,66 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:RestaurantManagerApp"
+        xmlns:vm="clr-namespace:RestaurantManagerApp.ViewModels"
+        xmlns:views="clr-namespace:RestaurantManagerApp.Views"
         mc:Ignorable="d"
-        Title="MainWindow" Height="450" Width="800">
-    <Grid>
+        Title="Restaurant Manager" Height="700" Width="1100"
+        WindowStartupLocation="CenterScreen">
+    <Window.Resources>
+        <!-- DataTemplates pentru a mapa ViewModels la Views -->
+        <!-- Acest lucru permite ca ContentControl să afișeze vederea corectă
+             bazându-se pe tipul CurrentViewModel din MainViewModel -->
 
+        <DataTemplate DataType="{x:Type vm:LoginViewModel}">
+            <views:LoginView/>
+        </DataTemplate>
+
+        <DataTemplate DataType="{x:Type vm:RegistrationViewModel}">
+            <views:RegistrationView/>
+        </DataTemplate>
+
+        <DataTemplate DataType="{x:Type vm:CategoryManagementViewModel}">
+            <views:CategoryManagementView/>
+        </DataTemplate>
+
+        <DataTemplate DataType="{x:Type vm:AlergenManagementViewModel}">
+            <views:AlergenManagementView/>
+        </DataTemplate>
+
+        <DataTemplate DataType="{x:Type vm:PreparatManagementViewModel}">
+            <views:PreparatManagementView/>
+        </DataTemplate>
+
+        <DataTemplate DataType="{x:Type vm:MeniuManagementViewModel}">
+            <views:MeniuManagementView/>
+        </DataTemplate>
+
+        <!-- Adaugă DataTemplates și pentru alte ViewModels pe măsură ce le creezi -->
+        <!--
+        <DataTemplate DataType="{x:Type vm:EmployeeDashboardViewModel}">
+            <views:EmployeeDashboardView/>
+        </DataTemplate>
+        -->
+
+    </Window.Resources>
+
+    <Grid>
+        <!-- Aici vom avea butoane de navigare globale DUPĂ login,
+             sau ContentControl va ocupa tot spațiul -->
+
+        <ContentControl Content="{Binding CurrentViewModel}"/>
+
+        <!-- Exemplu de meniu de navigare simplu (poate fi vizibil după login) -->
+        <!-- Vom adăuga asta mai târziu, când avem starea de login -->
+        <!--
+        <StackPanel Orientation="Horizontal" VerticalAlignment="Top" HorizontalAlignment="Center" Margin="10"
+                    Visibility="{Binding IsUserLoggedIn, Converter={StaticResource BooleanToVisibilityConverter}}">
+            <Button Content="Categorii" Command="{Binding NavigateToCategoriesCommand}" Margin="5"/>
+            <Button Content="Alergeni" Command="{Binding NavigateToAllergensCommand}" Margin="5"/>
+            <Button Content="Preparate" Command="{Binding NavigateToProductsCommand}" Margin="5"/>
+            <Button Content="Meniuri" Command="{Binding NavigateToMenusCommand}" Margin="5"/>
+            <Button Content="Logout" Command="{Binding LogoutCommand}" Margin="5"/>
+        </StackPanel>
+        -->
     </Grid>
 </Window>
