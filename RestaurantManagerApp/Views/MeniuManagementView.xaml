@@ -1,0 +1,195 @@
+﻿<Window x:Class="RestaurantManagerApp.Views.MeniuManagementView"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:RestaurantManagerApp.Views"
+        xmlns:vm="clr-namespace:RestaurantManagerApp.ViewModels"
+        xmlns:converters="clr-namespace:RestaurantManagerApp.Converters"
+        mc:Ignorable="d"
+        Title="Management Meniuri" Height="750" Width="1100" MinHeight="650" MinWidth="900"
+        d:DataContext="{d:DesignInstance Type=vm:MeniuManagementViewModel, IsDesignTimeCreatable=True}"
+        Loaded="Window_Loaded">
+
+    <Window.Resources>
+        <converters:BooleanToEditModeHeaderConverter x:Key="BooleanToEditModeHeaderConverter"
+                                                     TrueHeader="Editează Meniu"
+                                                     FalseHeader="Adaugă Meniu Nou"
+                                                     FallbackHeader="Formular Meniu"/>
+        <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
+    </Window.Resources>
+
+    <Grid Margin="15">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="400" MinWidth="300"/>
+            <!-- Lista de meniuri -->
+            <ColumnDefinition Width="*"/>
+            <!-- Formularul de editare/adăugare -->
+        </Grid.ColumnDefinitions>
+
+        <!-- Coloana Stânga: Lista de Meniuri -->
+        <Grid Grid.Column="0" Margin="0,0,10,0">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+
+            <TextBlock Grid.Row="0" Text="Meniuri Existente" FontSize="16" FontWeight="Bold" Margin="0,0,0,10"/>
+
+            <ListBox Grid.Row="1" ItemsSource="{Binding Meniuri}"
+                     SelectedItem="{Binding SelectedMeniu}"
+                     BorderThickness="1" BorderBrush="Gray">
+                <ListBox.ItemTemplate>
+                    <DataTemplate>
+                        <StackPanel Orientation="Vertical">
+                            <TextBlock Text="{Binding Denumire}" FontWeight="Bold"/>
+                            <!-- Folosim Denumire -->
+                            <TextBlock Text="{Binding Categorie.Nume, FallbackValue='Fără categorie'}" FontSize="10" Foreground="Gray"/>
+                            <!-- Pentru preț, vom lega la PretCalculat din ViewModel, dar Meniu din listă nu îl are direct.
+                                 Ar trebui să avem un wrapper MeniuViewModel pentru listă sau să afișăm altceva aici.
+                                 Momentan, lăsăm așa sau comentăm prețul din listă. -->
+                            <!-- <TextBlock Text="{Binding PretCalculat, StringFormat={}{0:C}, FallbackValue='N/A'}" FontSize="10"/> -->
+                        </StackPanel>
+                    </DataTemplate>
+                </ListBox.ItemTemplate>
+            </ListBox>
+
+            <Button Grid.Row="2" Content="Adaugă Meniu Nou"
+                    Command="{Binding PrepareNewMeniuCommand}"
+                    Margin="0,10,0,0" Padding="5"/>
+        </Grid>
+
+        <!-- Coloana Dreapta: Formular de Adăugare/Editare Meniu -->
+        <GroupBox Grid.Column="1"
+                  Header="{Binding IsEditMode, Converter={StaticResource BooleanToEditModeHeaderConverter}}"
+                  Padding="10" BorderThickness="1" BorderBrush="Gray">
+            <ScrollViewer VerticalScrollBarVisibility="Auto">
+                <Grid DataContext="{Binding}">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <!-- Denumire -->
+                        <RowDefinition Height="Auto"/>
+                        <!-- Eroare Denumire -->
+                        <RowDefinition Height="Auto"/>
+                        <!-- Categorie -->
+                        <RowDefinition Height="Auto"/>
+                        <!-- Eroare Categorie -->
+                        <RowDefinition Height="Auto"/>
+                        <!-- Descriere -->
+                        <RowDefinition Height="Auto"/>
+                        <!-- Cale Imagine -->
+                        <RowDefinition Height="Auto"/>
+                        <!-- Preț Calculat (ReadOnly) -->
+                        <RowDefinition Height="Auto"/>
+                        <!-- Label Componente -->
+                        <RowDefinition Height="150"/>
+                        <!-- ListBox Componente Meniu -->
+                        <RowDefinition Height="Auto"/>
+                        <!-- Controale adăugare componentă -->
+                        <RowDefinition Height="Auto"/>
+                        <!-- Activ CheckBox -->
+                        <RowDefinition Height="Auto"/>
+                        <!-- ID Meniu (doar în edit mode) -->
+                        <RowDefinition Height="*"/>
+                        <!-- Spațiu gol -->
+                        <RowDefinition Height="Auto"/>
+                        <!-- Butoane de acțiune -->
+                    </Grid.RowDefinitions>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" MinWidth="120"/>
+                        <!-- Etichete -->
+                        <ColumnDefinition Width="*"/>
+                        <!-- Controale de input -->
+                    </Grid.ColumnDefinitions>
+
+                    <Label Grid.Row="0" Grid.Column="0" Content="_Denumire Meniu:" Target="{Binding ElementName=FormDenumireMeniuTextBox}" VerticalAlignment="Center" Margin="0,0,10,5"/>
+                    <TextBox x:Name="FormDenumireMeniuTextBox" Grid.Row="0" Grid.Column="1"
+                             Text="{Binding FormDenumire, UpdateSourceTrigger=PropertyChanged, ValidatesOnNotifyDataErrors=True}" Margin="0,0,0,5"/>
+                    <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding ElementName=FormDenumireMeniuTextBox, Path=(Validation.Errors).CurrentItem.ErrorContent}" Foreground="Red" FontSize="10" Margin="0,0,0,10"/>
+
+                    <Label Grid.Row="2" Grid.Column="0" Content="Ca_tegorie:" Target="{Binding ElementName=FormCategorieMeniuComboBox}" VerticalAlignment="Center" Margin="0,0,10,5"/>
+                    <ComboBox x:Name="FormCategorieMeniuComboBox" Grid.Row="2" Grid.Column="1"
+                              ItemsSource="{Binding ListaCategoriiDisponibile}"
+                              SelectedItem="{Binding FormSelectedCategorie, ValidatesOnNotifyDataErrors=True}"
+                              DisplayMemberPath="Nume" Margin="0,0,0,5"/>
+                    <TextBlock Grid.Row="3" Grid.Column="1" Text="{Binding ElementName=FormCategorieMeniuComboBox, Path=(Validation.Errors).CurrentItem.ErrorContent}" Foreground="Red" FontSize="10" Margin="0,0,0,10"/>
+
+                    <Label Grid.Row="4" Grid.Column="0" Content="_Descriere:" Target="{Binding ElementName=FormDescriereMeniuTextBox}" VerticalAlignment="Top" Margin="0,5,10,5"/>
+                    <TextBox x:Name="FormDescriereMeniuTextBox" Grid.Row="4" Grid.Column="1"
+                             Text="{Binding FormDescriere, UpdateSourceTrigger=PropertyChanged, ValidatesOnNotifyDataErrors=True}" Margin="0,5,0,5"
+                             TextWrapping="Wrap" AcceptsReturn="True" MinHeight="60"/>
+
+                    <Label Grid.Row="5" Grid.Column="0" Content="Cale _Imagine:" Target="{Binding ElementName=FormImagineMeniuTextBox}" VerticalAlignment="Center" Margin="0,0,10,5"/>
+                    <Grid Grid.Row="5" Grid.Column="1" Margin="0,0,0,10">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBox x:Name="FormImagineMeniuTextBox" Grid.Column="0"
+             Text="{Binding FormCaleImagine, UpdateSourceTrigger=PropertyChanged, ValidatesOnNotifyDataErrors=True}"/>
+                        <Button Grid.Column="1" Content="..." Command="{Binding SelectMeniuImageCommand}" Margin="5,0,0,0" Padding="5,2" ToolTip="Selectează Imagine Meniu"/>
+                    </Grid>
+                    
+                    <Label Grid.Row="6" Grid.Column="0" Content="Preț Calculat:" VerticalAlignment="Center" Margin="0,0,10,5"/>
+                    <TextBlock Grid.Row="6" Grid.Column="1" Text="{Binding FormPretCalculatMeniu, StringFormat={}{0:C}, Mode=OneWay}" 
+                               VerticalAlignment="Center" Margin="0,0,0,10" FontWeight="Bold" Foreground="DarkGreen"/>
+
+
+                    <TextBlock Grid.Row="7" Grid.Column="0" Grid.ColumnSpan="2" Text="Componente Meniu:" FontWeight="Bold" Margin="0,10,0,5"/>
+                    <ListBox Grid.Row="8" Grid.Column="0" Grid.ColumnSpan="2" ItemsSource="{Binding FormComponenteMeniu}"
+                             MinHeight="100" BorderThickness="1" BorderBrush="LightGray" ScrollViewer.VerticalScrollBarVisibility="Auto">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate DataType="{x:Type vm:MeniuComponentaViewModel}">
+                                <Grid Width="Auto">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto" MinWidth="60"/>
+                                        <ColumnDefinition Width="Auto" MinWidth="50"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Grid.Column="0" Text="{Binding DenumirePreparat}" VerticalAlignment="Center"/>
+                                    <TextBox Grid.Column="1" Text="{Binding CantitateInMeniu, UpdateSourceTrigger=PropertyChanged, ValidatesOnNotifyDataErrors=True}" 
+                                             VerticalAlignment="Center" Margin="5,0" MinWidth="50" HorizontalAlignment="Right"/>
+                                    <TextBlock Grid.Column="2" Text="{Binding UnitateMasura}" VerticalAlignment="Center" Margin="5,0"/>
+                                    <Button Grid.Column="3" Content="X" Command="{Binding DataContext.RemoveComponentaCommand, RelativeSource={RelativeSource AncestorType=ListBox}}"
+                                            CommandParameter="{Binding}" Padding="5,2" Background="LightCoral" Foreground="White" ToolTip="Șterge Componenta"/>
+                                </Grid>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+
+                    <StackPanel Grid.Row="9" Grid.Column="0" Grid.ColumnSpan="2" Orientation="Horizontal" Margin="0,5,0,10">
+                        <TextBlock Text="Adaugă Preparat:" VerticalAlignment="Center" Margin="0,0,5,0"/>
+                        <ComboBox ItemsSource="{Binding ListaPreparateDisponibile}"
+                                  SelectedItem="{Binding FormSelectedPreparatPentruAdaugare}"
+                                  DisplayMemberPath="Denumire" Width="200" Margin="0,0,10,0"/>
+                        <Button Content="Adaugă Componentă" Command="{Binding AddComponentaCommand}" Padding="5"/>
+                        <Button Content="Recalculează Preț" Command="{Binding RecalculatePriceCommand}" Margin="10,0,0,0" Padding="5"
+                                ToolTip="Apasă pentru a actualiza prețul dacă ai modificat cantitățile componentelor manual"/>
+                    </StackPanel>
+
+                    <TextBlock Grid.Row="10" Grid.Column="0" Text="Activ:" VerticalAlignment="Center" Margin="0,0,10,5"/>
+                    <CheckBox Grid.Row="10" Grid.Column="1" IsChecked="{Binding FormEsteActiv}" VerticalAlignment="Center" Margin="0,0,0,10"/>
+
+                    <TextBlock Grid.Row="11" Grid.Column="0" Text="ID Meniu:" VerticalAlignment="Center" Margin="0,0,10,5"
+                               Visibility="{Binding IsEditMode, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                    <TextBlock Grid.Row="11" Grid.Column="1" Text="{Binding SelectedMeniu.MeniuID, Mode=OneWay, FallbackValue='-'}"
+                               VerticalAlignment="Center" Margin="0,0,0,10" FontWeight="Bold"
+                               Visibility="{Binding IsEditMode, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+
+                    <!-- Butoane de Acțiune pentru Formular -->
+                    <StackPanel Grid.Row="13" Grid.Column="0" Grid.ColumnSpan="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,10,0,0">
+                        <Button Content="Salvează" Command="{Binding SaveChangesCommand}" Margin="0,0,10,0" Padding="10,5"
+                                Visibility="{Binding IsEditMode, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                        <Button Content="Adaugă" Command="{Binding AddNewMeniuCommand}" Margin="0,0,10,0" Padding="10,5"
+                                Visibility="{Binding IsAddMode, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                        <Button Content="Anulează" Command="{Binding CancelEditCommand}" Margin="0,0,10,0" Padding="10,5"/>
+                        <Button Content="Șterge" Command="{Binding DeleteMeniuCommand}" Padding="10,5" Background="LightCoral"
+                                Visibility="{Binding IsEditMode, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                    </StackPanel>
+                </Grid>
+            </ScrollViewer>
+        </GroupBox>
+    </Grid>
+</Window>
