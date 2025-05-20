@@ -53,6 +53,10 @@ namespace RestaurantManagerApp
             services.AddTransient<PreparatManagementViewModel>();
             services.AddTransient<PreparatManagementView>();
 
+            services.AddTransient<IMeniuRepository, MeniuRepository>();
+            services.AddTransient<MeniuManagementViewModel>();
+            services.AddTransient<MeniuManagementView>();
+
             // Aici vom înregistra și alte servicii și ViewModels pe măsură ce le creăm:
             // Exemplu (decomentează și adaptează când le creezi):
             // services.AddTransient<IMainWindowViewModel, MainWindowViewModel>(); // Dacă ai o interfață
@@ -73,8 +77,11 @@ namespace RestaurantManagerApp
             //var alergenManagementView = ServiceProvider.GetService<AlergenManagementView>();
             //alergenManagementView?.Show();
 
-            var preparatManagementView = ServiceProvider.GetService<PreparatManagementView>();
-            preparatManagementView?.Show();
+            //var preparatManagementView = ServiceProvider.GetService<PreparatManagementView>();
+            //preparatManagementView?.Show();
+
+            var meniuManagementView = ServiceProvider.GetService<MeniuManagementView>();
+            meniuManagementView?.Show();
 
             // Deschide fereastra principală
             // Dacă ai înregistrat MainWindow pentru DI:

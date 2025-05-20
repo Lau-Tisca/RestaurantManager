@@ -29,7 +29,10 @@
 		<Content Include="ProductImages\**">
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 		</Content>
-		<Folder Include="Services"/>
+		<Content Include="MenuImages\**">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</Content>
+		<Folder Include="Services\" />
 	</ItemGroup>
 
   <ItemGroup>

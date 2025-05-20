@@ -1,11 +1,12 @@
 ﻿using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations.Schema; // Pentru NotMapped
 
 namespace RestaurantManagerApp.Models
 {
     public class Meniu
     {
         public int MeniuID { get; set; }
-        public string Nume { get; set; }
+        public string Denumire { get; set; }
         public int CategorieID { get; set; }
         public string? Descriere { get; set; }
         public string? CaleImagine { get; set; }
@@ -15,11 +16,12 @@ namespace RestaurantManagerApp.Models
         // Colecția va fi de tipul entității de joncțiune
         public virtual ICollection<MeniuPreparat> MeniuPreparate { get; set; }
 
+        [NotMapped]
         public decimal PretCalculat { get; set; }
 
         public Meniu()
         {
-            Nume = string.Empty;
+            Denumire = string.Empty;
             EsteActiv = true;
             MeniuPreparate = new List<MeniuPreparat>(); // Inițializăm colecția
         }

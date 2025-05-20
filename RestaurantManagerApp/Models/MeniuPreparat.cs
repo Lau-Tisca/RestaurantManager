@@ -17,17 +17,13 @@ namespace RestaurantManagerApp.Models
         public string UnitateMasuraCantitateInMeniu { get; set; }
 
         // Proprietăți de navigare către entitățile Meniu și Preparat
-        public virtual Meniu Meniu { get; set; }
-        public virtual Preparat Preparat { get; set; }
+        public virtual Meniu Meniu { get; set; } = null!;
+        public virtual Preparat Preparat { get; set; } = null!;
 
         public MeniuPreparat()
         {
             CantitateInMeniu = string.Empty;
             UnitateMasuraCantitateInMeniu = "g";
-            // Asigură-te că Meniu și Preparat nu sunt null aici dacă nu sunt încărcate
-            // Acest constructor este pentru crearea de noi instanțe, nu pentru cele încărcate de EF
-            Meniu = null!; // Folosim "null-forgiving operator" dacă avem nullable reference types activat și știm că va fi setat
-            Preparat = null!;
         }
     }
 }
