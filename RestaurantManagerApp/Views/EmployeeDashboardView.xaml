@@ -1,0 +1,26 @@
+﻿<UserControl x:Class="RestaurantManagerApp.Views.EmployeeDashboardView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:local="clr-namespace:RestaurantManagerApp.Views"
+             xmlns:vm="clr-namespace:RestaurantManagerApp.ViewModels"
+             mc:Ignorable="d"
+             d:DataContext="{d:DesignInstance Type=vm:EmployeeDashboardViewModel, IsDesignTimeCreatable=True}"
+             HorizontalAlignment="Center" VerticalAlignment="Center">
+    
+    <StackPanel Orientation="Vertical" Margin="20">
+        <TextBlock Text="Panou de Administrare Angajat" FontSize="24" FontWeight="Bold" HorizontalAlignment="Center" Margin="0,0,0,30"/>
+
+        <Button Content="Management Categorii" Command="{Binding GoToCategoriesCommand}" Margin="10" Padding="10,5" Width="200"/>
+        <Button Content="Management Alergeni" Command="{Binding GoToAllergensCommand}" Margin="10" Padding="10,5" Width="200"/>
+        <Button Content="Management Preparate" Command="{Binding GoToProductsCommand}" Margin="10" Padding="10,5" Width="200"/>
+        <Button Content="Management Meniuri" Command="{Binding GoToMenusCommand}" Margin="10" Padding="10,5" Width="200"/>
+
+        <!-- Butoane pentru funcționalități viitoare -->
+        <!--
+        <Button Content="Management Comenzi" Command="{Binding GoToOrdersCommand}" Margin="10" Padding="10,5" Width="200" IsEnabled="False"/>
+        <Button Content="Rapoarte" Command="{Binding GoToReportsCommand}" Margin="10" Padding="10,5" Width="200" IsEnabled="False"/>
+        -->
+    </StackPanel>
+</UserControl>

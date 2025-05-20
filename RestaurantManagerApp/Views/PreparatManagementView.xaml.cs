@@ -11,6 +11,11 @@ namespace RestaurantManagerApp.Views
             InitializeComponent();
         }
 
+        public PreparatManagementView()
+        {
+            InitializeComponent();
+        }
+
         private async void UserControl_Loaded(object sender, RoutedEventArgs e)
         {
             if (DataContext is PreparatManagementViewModel vm)

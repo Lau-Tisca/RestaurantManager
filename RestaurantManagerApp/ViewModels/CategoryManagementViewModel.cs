@@ -11,10 +11,11 @@ using System.Windows;
 
 namespace RestaurantManagerApp.ViewModels
 {
-    public partial class CategoryManagementViewModel : ObservableValidator
+    public partial class CategoryManagementViewModel : ObservableValidator, IAsyncInitializableVM
     {
         private readonly ICategorieRepository? _categorieRepository; // Nullable pentru design time
         private Categorie? _originalCategorie;
+
 
         [ObservableProperty]
         private ObservableCollection<Categorie> _categorii;

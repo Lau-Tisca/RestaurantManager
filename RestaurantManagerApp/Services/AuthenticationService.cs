@@ -22,7 +22,7 @@ namespace RestaurantManagerApp.Services
 
             var utilizator = await _utilizatorRepository.GetByEmailAsync(email);
 
-            if (utilizator != null && utilizator.EsteActiv)
+            if (utilizator != null)
             {
                 // Verifică parola folosind BCrypt
                 // BCrypt.Verify returnează true dacă parola corespunde hash-ului
@@ -74,6 +74,7 @@ namespace RestaurantManagerApp.Services
         public void Logout()
         {
             CurrentUser = null;
+            System.Diagnostics.Debug.WriteLine("User logged out.");
             // Aici ai putea adăuga și alte acțiuni de curățare a stării sesiunii dacă e cazul
         }
     }

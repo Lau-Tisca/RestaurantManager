@@ -38,32 +38,48 @@
             <views:MeniuManagementView/>
         </DataTemplate>
 
-        <!-- Adaugă DataTemplates și pentru alte ViewModels pe măsură ce le creezi -->
-        <!--
         <DataTemplate DataType="{x:Type vm:EmployeeDashboardViewModel}">
             <views:EmployeeDashboardView/>
         </DataTemplate>
-        -->
 
     </Window.Resources>
 
     <Grid>
-        <!-- Aici vom avea butoane de navigare globale DUPĂ login,
-             sau ContentControl va ocupa tot spațiul -->
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <!-- Rând pentru bara de navigare/acțiuni -->
+            <RowDefinition Height="*"/>
+            <!-- Rând pentru conținutul principal -->
+        </Grid.RowDefinitions>
 
-        <ContentControl Content="{Binding CurrentViewModel}"/>
+        <!-- Bara de Navigare/Acțiuni (vizibilă după login) -->
+        <Border Grid.Row="0" Background="#FFE0E0E0" Padding="5"
+        Visibility="{Binding IsUserLoggedIn, Converter={StaticResource BooleanToVisibilityConverter}}">
+            <!-- Folosim un Grid în loc de StackPanel pentru bara de acțiuni -->
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <!-- Pentru butonul Înapoi -->
+                    <ColumnDefinition Width="*"/>
+                    <!-- Spațiu care se extinde -->
+                    <ColumnDefinition Width="Auto"/>
+                    <!-- Pentru butonul Logout -->
+                </Grid.ColumnDefinitions>
 
-        <!-- Exemplu de meniu de navigare simplu (poate fi vizibil după login) -->
-        <!-- Vom adăuga asta mai târziu, când avem starea de login -->
-        <!--
-        <StackPanel Orientation="Horizontal" VerticalAlignment="Top" HorizontalAlignment="Center" Margin="10"
-                    Visibility="{Binding IsUserLoggedIn, Converter={StaticResource BooleanToVisibilityConverter}}">
-            <Button Content="Categorii" Command="{Binding NavigateToCategoriesCommand}" Margin="5"/>
-            <Button Content="Alergeni" Command="{Binding NavigateToAllergensCommand}" Margin="5"/>
-            <Button Content="Preparate" Command="{Binding NavigateToProductsCommand}" Margin="5"/>
-            <Button Content="Meniuri" Command="{Binding NavigateToMenusCommand}" Margin="5"/>
-            <Button Content="Logout" Command="{Binding LogoutCommand}" Margin="5"/>
-        </StackPanel>
-        -->
+                <Button Grid.Column="0" Content="Înapoi"
+                Command="{Binding NavigateBackCommand}"
+                Padding="10,5" Margin="5" VerticalAlignment="Center"/>
+
+                <!-- Butonul Logout va fi aliniat la dreapta datorită Width="*" pe coloana din mijloc -->
+                <Button Grid.Column="2" Content="Logout"
+                Command="{Binding LogoutCommand}"
+                Padding="10,5" Margin="5" VerticalAlignment="Center"/>
+            </Grid>
+        </Border>
+
+
+        <!-- ContentControl pentru Vederile Curente -->
+        <ContentControl Grid.Row="1" Content="{Binding CurrentViewModel}" Margin="5"/>
+
     </Grid>
 </Window>
