@@ -62,6 +62,7 @@ namespace RestaurantManagerApp
 
             // Servicii
             services.AddSingleton<IAuthenticationService, AuthenticationService>();
+            services.AddSingleton<IShoppingCartService, ShoppingCartService>();
 
             // ViewModels
             services.AddTransient<LoginViewModel>();
@@ -71,6 +72,7 @@ namespace RestaurantManagerApp
             services.AddTransient<PreparatManagementViewModel>();
             services.AddTransient<MeniuManagementViewModel>();
             services.AddTransient<RestaurantMenuViewModel>();
+            services.AddTransient<ShoppingCartViewModel>();
             services.AddTransient<MainViewModel>();
             services.AddTransient<EmployeeDashboardViewModel>();
             services.AddTransient<MainWindow>();

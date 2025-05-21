@@ -12,6 +12,7 @@ namespace RestaurantManagerApp.ViewModels.Display
         public override bool EsteMeniuCompus => true;
         public override int OriginalId => _meniu.MeniuID;
         public override object OriginalItem => _meniu;
+        public decimal CalculatedNumericPrice { get; private set; }
 
         public DisplayMeniuViewModel(Meniu meniu, ApplicationSettings appSettings)
         {
@@ -57,6 +58,7 @@ namespace RestaurantManagerApp.ViewModels.Display
             decimal discount = _appSettings.MenuDiscountPercentageX;
             decimal pretFinal = subtotalComponente * (1 - (discount / 100m));
             PretAfisat = $"{pretFinal:N2} RON";
+            CalculatedNumericPrice = pretFinal;
 
             // Calcul Alergeni (uniunea alergenilor din toate componentele)
             var alergeniUnici = new HashSet<string>();

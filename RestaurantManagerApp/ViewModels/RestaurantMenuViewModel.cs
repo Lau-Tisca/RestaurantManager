@@ -4,6 +4,7 @@ using RestaurantManagerApp.DataAccess;
 using RestaurantManagerApp.Models;
 using RestaurantManagerApp.Utils; // Pentru ApplicationSettings
 using RestaurantManagerApp.ViewModels.Display; // Pentru Display ViewModels
+using RestaurantManagerApp.Services;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -12,6 +13,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows.Data; // Pentru CollectionViewSource
+using System.Windows;
 
 namespace RestaurantManagerApp.ViewModels
 {
@@ -22,6 +24,8 @@ namespace RestaurantManagerApp.ViewModels
         private readonly IMeniuRepository? _meniuRepository;         // Nullable pentru design time
         private readonly IAlergenRepository? _alergenRepository;     // Nullable pentru design time
         private readonly ApplicationSettings _appSettings;
+        private readonly IAuthenticationService _authenticationService;
+        private readonly IShoppingCartService _shoppingCartService;
 
         // Colecția sursă completă, nefiltrată (sau cât mai puțin filtrată inițial)
         private List<DisplayCategoryViewModel> _fullMenuList = new();
@@ -42,6 +46,7 @@ namespace RestaurantManagerApp.ViewModels
         private Alergen? _selectedAllergenFilter;
 
         public List<string> AllergenFilterTypes { get; } = new List<string> { "Toate", "Conține", "Nu Conține" };
+        public bool IsClientLoggedIn => _authenticationService.CurrentUser?.TipUtilizator == "Client";
 
         [ObservableProperty]
         private string _selectedAllergenFilterType = "Toate";
@@ -50,11 +55,14 @@ namespace RestaurantManagerApp.ViewModels
         public IAsyncRelayCommand LoadMenuCommand { get; }
         public IRelayCommand SearchCommand { get; } // Redenumită din ApplyFiltersCommand pentru claritate
         public IRelayCommand ClearFiltersCommand { get; }
+        public IRelayCommand<DisplayMenuItemViewModel> AddToCartCommand { get; }
 
         // --- Constructor pentru Design Time ---
         public RestaurantMenuViewModel()
         {
             System.Diagnostics.Debug.WriteLine("RestaurantMenuViewModel DesignTime Constructor Called");
+            _authenticationService = new MockAuthenticationService();
+            _shoppingCartService = new MockShoppingCartService();
             _appSettings = new ApplicationSettings { MenuDiscountPercentageX = 10 };
             _availableAllergens = new ObservableCollection<Alergen>
             {
@@ -97,6 +105,9 @@ namespace RestaurantManagerApp.ViewModels
             // CanExecute pentru SearchCommand ar putea verifica dacă există criterii de filtrare
             SearchCommand = new RelayCommand(ApplyFiltersInternal, CanApplyFiltersInternal);
             ClearFiltersCommand = new RelayCommand(ExecuteClearFiltersInternal);
+            AddToCartCommand = new RelayCommand<DisplayMenuItemViewModel>(
+                item => { if (item != null) System.Diagnostics.Debug.WriteLine($"Design: Adaugă în coș {item.Denumire}"); },
+                                                                    item => item != null && item.EsteDisponibil && IsClientLoggedIn);
         }
 
         // --- Constructor pentru Runtime ---
@@ -105,7 +116,9 @@ namespace RestaurantManagerApp.ViewModels
             IPreparatRepository preparatRepository,
             IMeniuRepository meniuRepository,
             IAlergenRepository alergenRepository,
-            ApplicationSettings appSettings)
+            ApplicationSettings appSettings,
+            IAuthenticationService authenticationService,
+            IShoppingCartService shoppingCartService)
         {
             System.Diagnostics.Debug.WriteLine("RestaurantMenuViewModel Runtime Constructor Called");
             _categorieRepository = categorieRepository ?? throw new ArgumentNullException(nameof(categorieRepository));
@@ -113,10 +126,21 @@ namespace RestaurantManagerApp.ViewModels
             _meniuRepository = meniuRepository ?? throw new ArgumentNullException(nameof(meniuRepository));
             _alergenRepository = alergenRepository ?? throw new ArgumentNullException(nameof(alergenRepository));
             _appSettings = appSettings ?? throw new ArgumentNullException(nameof(appSettings));
+            _authenticationService = authenticationService ?? throw new ArgumentNullException(nameof(authenticationService));
+            _shoppingCartService = shoppingCartService ?? throw new ArgumentNullException(nameof(shoppingCartService));
 
             LoadMenuCommand = new AsyncRelayCommand(LoadFullMenuAsync);
             SearchCommand = new RelayCommand(ApplyFiltersInternal, CanApplyFiltersInternal);
             ClearFiltersCommand = new RelayCommand(ExecuteClearFiltersInternal);
+            AddToCartCommand = new RelayCommand<DisplayMenuItemViewModel>(ExecuteAddToCart, CanExecuteAddToCart);
+
+            OnPropertyChanged(nameof(IsClientLoggedIn));
+        }
+
+        public void UpdateLoginState()
+        {
+            OnPropertyChanged(nameof(IsClientLoggedIn));
+            AddToCartCommand.NotifyCanExecuteChanged();
         }
 
         // --- Metode pentru încărcarea datelor ---
@@ -296,6 +320,39 @@ namespace RestaurantManagerApp.ViewModels
             ApplyFiltersInternal(); // Aplică direct pentru a reafișa tot
         }
 
+        private bool CanExecuteAddToCart(DisplayMenuItemViewModel? item)
+        {
+            return item != null && item.EsteDisponibil && IsClientLoggedIn;
+        }
+
+        private void ExecuteAddToCart(DisplayMenuItemViewModel? item)
+        {
+            System.Diagnostics.Debug.WriteLine("ExecuteAddToCart: APELAT");
+
+            if (item == null)
+            {
+                System.Diagnostics.Debug.WriteLine("ExecuteAddToCart: item este NULL! Comanda nu a primit parametrul corect.");
+                MessageBox.Show("Eroare: Produsul nu a putut fi identificat pentru adăugare în coș.", "Eroare", MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
+
+            try
+            {
+                _shoppingCartService.AddItemToCart(item, 1); // Adaugă 1 bucată implicit
+                System.Diagnostics.Debug.WriteLine($"ExecuteAddToCart: '{item.Denumire}' a fost trimis către ShoppingCartService.");
+
+                // Acum MessageBox-ul ar trebui să se afișeze
+                //MessageBox.Show($"{item.Denumire} a fost adăugat în coș!", "Info", MessageBoxButton.OK, MessageBoxImage.Information);
+                System.Diagnostics.Debug.WriteLine($"ExecuteAddToCart: MessageBox afișat pentru '{item.Denumire}'.");
+            }
+            catch (Exception ex)
+            {
+                // Prinde orice excepție neașteptată din _shoppingCartService.AddItemToCart
+                System.Diagnostics.Debug.WriteLine($"EROARE în ExecuteAddToCart la apelarea _shoppingCartService.AddItemToCart sau MessageBox: {ex.ToString()}");
+                MessageBox.Show($"A apărut o eroare la adăugarea în coș: {ex.Message}", "Eroare Critică", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
         public async Task InitializeAsync()
         {
             System.Diagnostics.Debug.WriteLine($"--- RestaurantMenuViewModel: InitializeAsync APELAT --- Timestamp: {DateTime.Now}");
@@ -310,5 +367,8 @@ namespace RestaurantManagerApp.ViewModels
             }
             System.Diagnostics.Debug.WriteLine($"--- RestaurantMenuViewModel: InitializeAsync TERMINAT --- Timestamp: {DateTime.Now}");
         }
+
+        private class MockAuthenticationService : IAuthenticationService { public Utilizator? CurrentUser => new Utilizator { TipUtilizator = "Client" }; /* implementează restul dacă e nevoie */ public Task<Utilizator?> LoginAsync(string e, string p) => Task.FromResult<Utilizator?>(null); public Task<bool> RegisterClientAsync(string n, string pn, string e, string p, string? nt, string? al) => Task.FromResult(false); public void Logout() { } }
+        private class MockShoppingCartService : IShoppingCartService { public ObservableCollection<CartItemViewModel> CartItems => new(); public decimal Subtotal => 0; public int TotalItems => 0; public event PropertyChangedEventHandler? PropertyChanged; public void AddItemToCart(DisplayMenuItemViewModel i, int q = 1) { } public void ClearCart() { } public void RemoveItemFromCart(CartItemViewModel c) { } public void UpdateItemQuantity(CartItemViewModel c, int nq) { } }
     }
 }

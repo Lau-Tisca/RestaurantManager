@@ -41,7 +41,10 @@
                             </Style>
                         </TextBlock.Style>
                     </TextBlock>
-                    <!-- Aici vom adăuga butoane "Adaugă în Coș" când utilizatorul e logat și e client -->
+                    <Button Content="Adaugă în Coș" Margin="0,10,0,0" Padding="5"
+                            Command="{Binding DataContext.AddToCartCommand, RelativeSource={RelativeSource AncestorType={x:Type local:RestaurantMenuView}}}"
+                            CommandParameter="{Binding}"
+                            Visibility="{Binding DataContext.IsClientLoggedIn, RelativeSource={RelativeSource AncestorType={x:Type local:RestaurantMenuView}}, Converter={StaticResource BooleanToVisibilityConverter}}"/>
                 </StackPanel>
             </Border>
         </DataTemplate>

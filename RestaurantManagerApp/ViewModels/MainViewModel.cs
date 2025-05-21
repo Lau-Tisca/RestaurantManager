@@ -16,6 +16,7 @@ namespace RestaurantManagerApp.ViewModels
     {
         private readonly IServiceProvider _serviceProvider;
         private readonly IAuthenticationService _authenticationService;
+        private readonly IShoppingCartService _shoppingCartService;
 
         [ObservableProperty]
         private ObservableObject? _currentViewModel;
@@ -48,24 +49,36 @@ namespace RestaurantManagerApp.ViewModels
         public IRelayCommand LogoutCommand { get; }
         public IRelayCommand NavigateToLoginCommand { get; } // DECLARĂ AICI
         public IRelayCommand NavigateBackCommand { get; }
+        public IRelayCommand NavigateToShoppingCartCommand { get; }
 
         // Pentru o istorie de navigație simplă (opțional)
         // private Stack<ObservableObject> _navigationHistory = new Stack<ObservableObject>();
 
-        public MainViewModel(IServiceProvider serviceProvider, IAuthenticationService authenticationService)
+        public MainViewModel(IServiceProvider serviceProvider, IAuthenticationService authenticationService, IShoppingCartService shoppingCartService)
         {
             _serviceProvider = serviceProvider ?? throw new ArgumentNullException(nameof(serviceProvider));
             _authenticationService = authenticationService ?? throw new ArgumentNullException(nameof(authenticationService));
+            _shoppingCartService = shoppingCartService;
 
             // Inițializare comenzi
             NavigateToCategoriesCommand = new RelayCommand(ExecuteNavigateToCategoryManagement);
             NavigateToAllergensCommand = new RelayCommand(ExecuteNavigateToAlergenManagement);
             NavigateToProductsCommand = new RelayCommand(ExecuteNavigateToPreparatManagement);
             NavigateToMenusCommand = new RelayCommand(ExecuteNavigateToMeniuManagement);
+            NavigateToShoppingCartCommand = new RelayCommand(ExecuteNavigateToShoppingCart, CanExecuteNavigateToShoppingCart);
 
             LogoutCommand = new RelayCommand(ExecuteLogout, () => IsUserLoggedIn);
             NavigateToLoginCommand = new RelayCommand(ExecuteNavigateToLoginInternal, () => !IsUserLoggedIn); // INIȚIALIZEAZĂ AICI
             NavigateBackCommand = new RelayCommand(ExecuteNavigateBack, CanExecuteNavigateBack);
+
+            _shoppingCartService.PropertyChanged += (s, e) =>
+            {
+                if (e.PropertyName == nameof(IShoppingCartService.TotalItems))
+                {
+                    NavigateToShoppingCartCommand.NotifyCanExecuteChanged();
+                    OnPropertyChanged(nameof(CartItemCountDisplay)); // Notifică și textul afișat
+                }
+            };
 
             // Starea inițială a aplicației: afișează meniul restaurantului
             NavigateToRestaurantMenu();
@@ -77,9 +90,11 @@ namespace RestaurantManagerApp.ViewModels
         {
             OnPropertyChanged(nameof(IsUserNotLoggedIn)); // Notifică proprietatea inversă
             OnPropertyChanged(nameof(NumeUtilizatorLogat)); // Notifică numele utilizatorului
+            OnPropertyChanged(nameof(CartItemCountDisplay));
             LogoutCommand.NotifyCanExecuteChanged();       // Notifică comenzile care depind de starea de login
             NavigateToLoginCommand.NotifyCanExecuteChanged();
             NavigateBackCommand.NotifyCanExecuteChanged(); // Starea "Înapoi" poate depinde și de login
+            NavigateToShoppingCartCommand.NotifyCanExecuteChanged();
         }
 
         // Metodă apelată automat când _currentViewModel (și deci CurrentViewModel) se schimbă
@@ -251,6 +266,12 @@ namespace RestaurantManagerApp.ViewModels
         private void ExecuteNavigateToAlergenManagement() => CurrentViewModel = _serviceProvider.GetService<AlergenManagementViewModel>();
         private void ExecuteNavigateToPreparatManagement() => CurrentViewModel = _serviceProvider.GetService<PreparatManagementViewModel>();
         private void ExecuteNavigateToMeniuManagement() => CurrentViewModel = _serviceProvider.GetService<MeniuManagementViewModel>();
+        private void ExecuteNavigateToShoppingCart()
+        {
+            CurrentViewModel = _serviceProvider.GetService<ShoppingCartViewModel>();
+        }
+        public string CartItemCountDisplay => _shoppingCartService.TotalItems > 0 ? $"Coș ({_shoppingCartService.TotalItems})" : "Coș";
+        private bool CanExecuteNavigateToShoppingCart() => _shoppingCartService.TotalItems > 0; // Sau mereu activ
     }
 
     // Interfață pentru ViewModels care necesită inițializare asincronă la navigare

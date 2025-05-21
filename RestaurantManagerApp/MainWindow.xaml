@@ -45,6 +45,9 @@
         <DataTemplate DataType="{x:Type vm:MeniuManagementViewModel}">
             <views:MeniuManagementView/>
         </DataTemplate>
+        <DataTemplate DataType="{x:Type vm:ShoppingCartViewModel}">
+            <views:ShoppingCartView/>
+        </DataTemplate>
 
     </Window.Resources>
 
@@ -82,6 +85,9 @@
 
                 <!-- Acțiuni Utilizator (Login/Logout) -->
                 <StackPanel Grid.Column="2" Orientation="Horizontal" HorizontalAlignment="Right">
+                    <Button Content="{Binding CartItemCountDisplay}"
+                            Command="{Binding NavigateToShoppingCartCommand}"
+                            Padding="10,5" Margin="5,0,10,0" />     
                     <!-- Mesaj de bun venit și Nume Utilizator (când e logat) -->
                     <TextBlock VerticalAlignment="Center" Margin="0,0,10,0"
                                Visibility="{Binding IsUserLoggedIn, Converter={StaticResource BooleanToVisibilityConverter}}">
