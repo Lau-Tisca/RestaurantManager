@@ -2,163 +2,181 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.Extensions.DependencyInjection;
-using RestaurantManagerApp.Models; // Pentru Utilizator
-using RestaurantManagerApp.Services; // Pentru IAuthenticationService
+using RestaurantManagerApp.Models;
+using RestaurantManagerApp.Services;
+using RestaurantManagerApp.Utils;
 using System;
-using System.Threading.Tasks; // Pentru Task
-using System.Windows;     // Pentru MessageBox
+using System.Collections.Generic; // Pentru Stack (dacă implementezi istorie navigație)
+using System.Threading.Tasks;
+using System.Windows;
 
 namespace RestaurantManagerApp.ViewModels
 {
     public partial class MainViewModel : ObservableObject
     {
         private readonly IServiceProvider _serviceProvider;
-        private readonly IAuthenticationService _authenticationService; // Injectăm serviciul de autentificare
+        private readonly IAuthenticationService _authenticationService;
 
         [ObservableProperty]
         private ObservableObject? _currentViewModel;
 
+        // Proprietatea principală pentru starea de login
         [ObservableProperty]
-        [NotifyPropertyChangedFor(nameof(IsUserNotLoggedIn))] // Notifică și proprietatea inversă
-        private bool _isUserLoggedIn = false; // Pentru a controla vizibilitatea elementelor UI (ex: buton Logout)
+        // [NotifyPropertyChangedFor(nameof(IsUserNotLoggedIn))] // Nu e nevoie aici dacă o facem în OnIsUserLoggedInChanged
+        private bool _isUserLoggedIn = false;
 
+        // Proprietatea calculată inversă
         public bool IsUserNotLoggedIn => !IsUserLoggedIn;
 
+        // Proprietate pentru numele utilizatorului logat
+        public string NumeUtilizatorLogat
+        {
+            get
+            {
+                return _authenticationService.CurrentUser?.NumeComplet() ?? string.Empty;
+            }
+        }
 
-        // Comenzi de Navigare pentru Dashboard
+
+        // Comenzi de Navigare pentru Dashboard Angajat
         public IRelayCommand NavigateToCategoriesCommand { get; }
         public IRelayCommand NavigateToAllergensCommand { get; }
         public IRelayCommand NavigateToProductsCommand { get; }
         public IRelayCommand NavigateToMenusCommand { get; }
+
+        // Comenzi Globale
         public IRelayCommand LogoutCommand { get; }
+        public IRelayCommand NavigateToLoginCommand { get; } // DECLARĂ AICI
         public IRelayCommand NavigateBackCommand { get; }
 
+        // Pentru o istorie de navigație simplă (opțional)
+        // private Stack<ObservableObject> _navigationHistory = new Stack<ObservableObject>();
 
         public MainViewModel(IServiceProvider serviceProvider, IAuthenticationService authenticationService)
         {
-            _serviceProvider = serviceProvider;
-            _authenticationService = authenticationService; // Salvează serviciul injectat
+            _serviceProvider = serviceProvider ?? throw new ArgumentNullException(nameof(serviceProvider));
+            _authenticationService = authenticationService ?? throw new ArgumentNullException(nameof(authenticationService));
 
+            // Inițializare comenzi
             NavigateToCategoriesCommand = new RelayCommand(ExecuteNavigateToCategoryManagement);
             NavigateToAllergensCommand = new RelayCommand(ExecuteNavigateToAlergenManagement);
             NavigateToProductsCommand = new RelayCommand(ExecuteNavigateToPreparatManagement);
             NavigateToMenusCommand = new RelayCommand(ExecuteNavigateToMeniuManagement);
-            LogoutCommand = new RelayCommand(ExecuteLogout, () => IsUserLoggedIn); // Comanda Logout e activă doar dacă e cineva logat
+
+            LogoutCommand = new RelayCommand(ExecuteLogout, () => IsUserLoggedIn);
+            NavigateToLoginCommand = new RelayCommand(ExecuteNavigateToLoginInternal, () => !IsUserLoggedIn); // INIȚIALIZEAZĂ AICI
             NavigateBackCommand = new RelayCommand(ExecuteNavigateBack, CanExecuteNavigateBack);
 
-            // Starea inițială a aplicației
-            if (_authenticationService.CurrentUser == null)
-            {
-                NavigateToLogin();
-            }
-            else
-            {
-                // Dacă există deja un utilizator (ex: sesiune salvată - nu e cazul acum), navighează corespunzător
-                HandleSuccessfulLogin();
-            }
+            // Starea inițială a aplicației: afișează meniul restaurantului
+            NavigateToRestaurantMenu();
+            UpdateLoginState(); // Actualizează starea vizibilității butoanelor Login/Logout
         }
 
+        // Metodă apelată automat când _isUserLoggedIn (și deci IsUserLoggedIn) se schimbă
+        partial void OnIsUserLoggedInChanged(bool value)
+        {
+            OnPropertyChanged(nameof(IsUserNotLoggedIn)); // Notifică proprietatea inversă
+            OnPropertyChanged(nameof(NumeUtilizatorLogat)); // Notifică numele utilizatorului
+            LogoutCommand.NotifyCanExecuteChanged();       // Notifică comenzile care depind de starea de login
+            NavigateToLoginCommand.NotifyCanExecuteChanged();
+            NavigateBackCommand.NotifyCanExecuteChanged(); // Starea "Înapoi" poate depinde și de login
+        }
+
+        // Metodă apelată automat când _currentViewModel (și deci CurrentViewModel) se schimbă
         partial void OnCurrentViewModelChanged(ObservableObject? oldValue, ObservableObject? newValue)
         {
-            // Simplu: dacă noua vedere nu este Login sau Register sau Dashboard, comanda Înapoi e activă.
-            // Pentru o istorie reală, ai face push la oldValue în _navigationHistory aici.
+            System.Diagnostics.Debug.WriteLine($"MainViewModel: CurrentViewModel changed. Old: {oldValue?.GetType().Name}, New: {newValue?.GetType().Name}");
             NavigateBackCommand.NotifyCanExecuteChanged();
 
-            // Dacă noul ViewModel are nevoie de inițializare asincronă specifică la navigare
-            // și are o metodă standard (ex: IAsyncInitializeViewModel)
-            if (newValue is IAsyncInitializableVM initializableVM)
+            if (newValue is RestaurantMenuViewModel restaurantMenuVM)
             {
-                // Nu bloca firul UI, rulează asincron fără await aici,
-                // sau fă metoda OnCurrentViewModelChanged async Task și folosește await.
-                // Pentru simplitate, o lăsăm așa, presupunând că InitializeAsync e rapid sau gestionează corect.
-                #pragma warning disable CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
+                System.Diagnostics.Debug.WriteLine("MainViewModel: Noul CurrentViewModel este RestaurantMenuViewModel. Se apelează InitializeAsync...");
+                // Forțează inițializarea aici, pe lângă cea din UserControl_Loaded
+#pragma warning disable CS4014
+                restaurantMenuVM.InitializeAsync();
+#pragma warning restore CS4014
+            }
+            else if (newValue is IAsyncInitializableVM initializableVM) // Generalizează pentru alte VM-uri
+            {
+                System.Diagnostics.Debug.WriteLine($"MainViewModel: Noul CurrentViewModel ({newValue?.GetType().Name}) implementează IAsyncInitializableVM. Se apelează InitializeAsync...");
+#pragma warning disable CS4014
                 initializableVM.InitializeAsync();
-                #pragma warning restore CS4014
+#pragma warning restore CS4014
             }
-            else if (newValue is CategoryManagementViewModel cmVM) // Exemplu de inițializare specifică
-            {
-                #pragma warning disable CS4014
-                cmVM.InitializeAsync();
-                #pragma warning restore CS4014
-            }
-            // Adaugă else if pentru celelalte ViewModels de management care au InitializeAsync
-            else if (newValue is AlergenManagementViewModel amVM) { /* ... amVM.InitializeAsync(); ... */ }
-            else if (newValue is PreparatManagementViewModel pmVM) { /* ... pmVM.InitializeAsync(); ... */ }
-            else if (newValue is MeniuManagementViewModel mmVM) { /* ... mmVM.InitializeAsync(); ... */ }
-
-
+            // ... else if pentru alte ViewModels specifice care nu implementează interfața ...
         }
 
         private bool CanExecuteNavigateBack()
         {
-            // Comanda "Înapoi" este activă dacă vederea curentă NU este:
-            // - LoginView
-            // - RegistrationView
-            // - EmployeeDashboardView (sau ClientDashboardView) - adică ești într-o vedere "interioară"
-            // Pentru o istorie: return _navigationHistory.Count > 0;
+            // O logică mai bună pentru "Înapoi" ar fi necesară dacă ai mai multe niveluri de navigație
+            // Momentan, e activ dacă nu suntem pe Login, Register sau un Dashboard principal
             return CurrentViewModel != null &&
                    !(CurrentViewModel is LoginViewModel) &&
                    !(CurrentViewModel is RegistrationViewModel) &&
-                   !(CurrentViewModel is EmployeeDashboardViewModel); // Adaugă și ClientDashboardViewModel dacă îl ai
+                   !(CurrentViewModel is EmployeeDashboardViewModel) &&
+                   !(CurrentViewModel is RestaurantMenuViewModel && !IsUserLoggedIn); // Nu te duci înapoi de la meniul oaspetelui dacă nu ești logat
         }
 
         private void ExecuteNavigateBack()
         {
-            // Pentru o istorie reală:
-            // if (_navigationHistory.Count > 0)
-            // {
-            //     CurrentViewModel = _navigationHistory.Pop();
-            // }
-            // else
-            // {
-            //     // Fallback la dashboard-ul corespunzător dacă istoria e goală (nu ar trebui dacă CanExecute e corect)
-            //     HandleSuccessfulLogin(); // Aceasta va naviga la dashboard-ul corect
-            // }
-
-            // Abordare Simplificată: "Înapoi" duce mereu la Dashboard-ul relevant
-            Utilizator? currentUser = _authenticationService.CurrentUser;
-            if (currentUser != null)
+            // Navigație simplificată "Înapoi":
+            // Dacă suntem într-o vedere de management (deschisă din EmployeeDashboard), ne întoarcem la EmployeeDashboard.
+            // Altfel, dacă suntem logați ca și client și nu suntem pe RestaurantMenu, ne întoarcem la RestaurantMenu.
+            // Altfel, la RestaurantMenu (landing page).
+            if (_authenticationService.CurrentUser?.TipUtilizator == "Angajat" && !(CurrentViewModel is EmployeeDashboardViewModel))
             {
-                if (currentUser.TipUtilizator == "Angajat")
-                {
-                    NavigateToEmployeeDashboard();
-                }
-                else if (currentUser.TipUtilizator == "Client")
-                {
-                    // TODO: Navighează la Client Dashboard
-                    // Momentan, putem să nu facem nimic sau să mergem la Login dacă nu e dashboard
-                    NavigateToLogin(); // Sau o vedere "acasă" pentru client
-                }
-                else
-                {
-                    NavigateToLogin(); // Fallback
-                }
+                NavigateToEmployeeDashboard();
+            }
+            else if (_authenticationService.CurrentUser?.TipUtilizator == "Client" && !(CurrentViewModel is RestaurantMenuViewModel)) // Presupunând că RestaurantMenu e "acasă" pentru client
+            {
+                NavigateToRestaurantMenu();
             }
             else
             {
-                NavigateToLogin(); // Dacă nu e niciun utilizator logat, du la Login
+                NavigateToRestaurantMenu(); // Pagina default
             }
         }
 
+
         private void UpdateLoginState()
         {
-            IsUserLoggedIn = _authenticationService.CurrentUser != null;
-            LogoutCommand.NotifyCanExecuteChanged(); // Notifică comanda Logout
+            // Forțează notificarea pentru IsUserLoggedIn pentru a declanșa OnIsUserLoggedInChanged
+            bool newState = _authenticationService.CurrentUser != null;
+            if (IsUserLoggedIn != newState) // Setează doar dacă s-a schimbat efectiv pentru a evita bucle
+            {
+                IsUserLoggedIn = newState;
+            }
+            else // Dacă starea nu s-a schimbat, dar vrem să forțăm notificarea proprietăților dependente
+            {
+                OnPropertyChanged(nameof(IsUserLoggedIn)); // Va apela OnIsUserLoggedInChanged
+                OnPropertyChanged(nameof(IsUserNotLoggedIn));
+                OnPropertyChanged(nameof(NumeUtilizatorLogat));
+                LogoutCommand.NotifyCanExecuteChanged();
+                NavigateToLoginCommand.NotifyCanExecuteChanged();
+            }
         }
 
-        private void NavigateToLogin()
+        // Metoda internă apelată de comanda NavigateToLoginCommand
+        private void ExecuteNavigateToLoginInternal()
         {
+            NavigateToLogin(true); // true pentru a indica că e o acțiune a utilizatorului
+        }
+
+        // Metoda de navigare la Login, poate fi apelată și intern
+        private void NavigateToLogin(bool fromUserActionOrSpecificContext = false)
+        {
+            // if (!fromUserActionOrSpecificContext && IsUserLoggedIn) return; // O optimizare posibilă
+
             var loginVM = _serviceProvider.GetService<LoginViewModel>();
             if (loginVM != null)
             {
                 loginVM.OnLoginSuccessAsync = async () =>
                 {
                     HandleSuccessfulLogin();
-                    await Task.CompletedTask; // Func<Task> necesită un Task returnat
+                    await Task.CompletedTask;
                 };
-                loginVM.OnNavigateToRegister = NavigateToRegister;
+                loginVM.OnNavigateToRegister = NavigateToRegister; // Aceasta ar trebui să fie OK dacă NavigateToRegister nu are parametri
                 CurrentViewModel = loginVM;
-                UpdateLoginState();
             }
         }
 
@@ -172,15 +190,14 @@ namespace RestaurantManagerApp.ViewModels
                     NavigateToLogin();
                     await Task.CompletedTask;
                 };
-                registerVM.OnNavigateToLogin = NavigateToLogin;
+                registerVM.OnNavigateToLogin = ExecuteNavigateToLoginInternal;
                 CurrentViewModel = registerVM;
-                UpdateLoginState(); // Deși nu e logat, e bine să actualizăm starea
             }
         }
 
         private void HandleSuccessfulLogin()
         {
-            UpdateLoginState();
+            UpdateLoginState(); // Foarte important să fie apelat aici pentru a actualiza UI-ul
             Utilizator? currentUser = _authenticationService.CurrentUser;
             if (currentUser != null)
             {
@@ -190,21 +207,16 @@ namespace RestaurantManagerApp.ViewModels
                 }
                 else if (currentUser.TipUtilizator == "Client")
                 {
-                    // TODO: Navighează la Client Dashboard sau Meniu Client
-                    MessageBox.Show("Client Dashboard/Menu nu este implementat încă.", "Info", MessageBoxButton.OK, MessageBoxImage.Information);
-                    // Momentan, pentru test, putem naviga la EmployeeDashboard sau la un placeholder
-                    // NavigateToEmployeeDashboard(); // Sau CurrentViewModel = new PlaceholderClientViewModel();
-                    CurrentViewModel = null;
+                    NavigateToRestaurantMenu();
                 }
                 else
                 {
                     MessageBox.Show("Tip utilizator necunoscut. Se navighează la Login.", "Eroare", MessageBoxButton.OK, MessageBoxImage.Error);
-                    NavigateToLogin(); // Sau un view de eroare
+                    NavigateToLogin();
                 }
             }
             else
             {
-                // Acest caz nu ar trebui să apară dacă OnLoginSuccessAsync e apelat corect
                 NavigateToLogin();
             }
         }
@@ -214,47 +226,37 @@ namespace RestaurantManagerApp.ViewModels
             var dashboardVM = _serviceProvider.GetService<EmployeeDashboardViewModel>();
             if (dashboardVM != null)
             {
-                // Setăm acțiunile de navigare pentru butoanele din dashboard
                 dashboardVM.NavigateToCategories = ExecuteNavigateToCategoryManagement;
                 dashboardVM.NavigateToAllergens = ExecuteNavigateToAlergenManagement;
                 dashboardVM.NavigateToProducts = ExecuteNavigateToPreparatManagement;
                 dashboardVM.NavigateToMenus = ExecuteNavigateToMeniuManagement;
-                // dashboardVM.NavigateToOrders = ...
-                // dashboardVM.NavigateToReports = ...
-
                 CurrentViewModel = dashboardVM;
             }
+        }
+
+        private void NavigateToRestaurantMenu()
+        {
+            CurrentViewModel = _serviceProvider.GetService<RestaurantMenuViewModel>();
         }
 
         private void ExecuteLogout()
         {
             _authenticationService.Logout();
-            NavigateToLogin(); // După logout, du-te la ecranul de login
+            // UpdateLoginState(); // Este apelat de OnIsUserLoggedInChanged
+            IsUserLoggedIn = false; // Setează direct și lasă OnIsUserLoggedInChanged să facă restul
+            NavigateToRestaurantMenu(); // După logout, du-te la meniul restaurantului (landing page)
         }
 
-        // Metodele efective de schimbare a CurrentViewModel pentru modulele de management
-        private void ExecuteNavigateToCategoryManagement()
-        {
-            var vm = _serviceProvider.GetService<CategoryManagementViewModel>();
-            if (vm == null) return; // Verificăm dacă am obținut ViewModel-ul corect
-            CurrentViewModel = vm;
-        }
-        private void ExecuteNavigateToAlergenManagement()
-        {
-            CurrentViewModel = _serviceProvider.GetService<AlergenManagementViewModel>();
-        }
-        private void ExecuteNavigateToPreparatManagement()
-        {
-            CurrentViewModel = _serviceProvider.GetService<PreparatManagementViewModel>();
-        }
-        private void ExecuteNavigateToMeniuManagement()
-        {
-            CurrentViewModel = _serviceProvider.GetService<MeniuManagementViewModel>();
-        }
+        private void ExecuteNavigateToCategoryManagement() => CurrentViewModel = _serviceProvider.GetService<CategoryManagementViewModel>();
+        private void ExecuteNavigateToAlergenManagement() => CurrentViewModel = _serviceProvider.GetService<AlergenManagementViewModel>();
+        private void ExecuteNavigateToPreparatManagement() => CurrentViewModel = _serviceProvider.GetService<PreparatManagementViewModel>();
+        private void ExecuteNavigateToMeniuManagement() => CurrentViewModel = _serviceProvider.GetService<MeniuManagementViewModel>();
     }
 
+    // Interfață pentru ViewModels care necesită inițializare asincronă la navigare
     public interface IAsyncInitializableVM
     {
         Task InitializeAsync();
+        // Poți adăuga un bool IsDataLoaded { get; } pentru a evita reîncărcarea inutilă
     }
 }

@@ -6,14 +6,17 @@
         xmlns:local="clr-namespace:RestaurantManagerApp"
         xmlns:vm="clr-namespace:RestaurantManagerApp.ViewModels"
         xmlns:views="clr-namespace:RestaurantManagerApp.Views"
-        mc:Ignorable="d"
-        Title="Restaurant Manager" Height="700" Width="1100"
+        xmlns:converters="clr-namespace:RestaurantManagerApp.Converters"
+    mc:Ignorable="d"
+        Title="Restaurant Manager" Height="750" Width="1200" MinHeight="600" MinWidth="900"
         WindowStartupLocation="CenterScreen">
     <Window.Resources>
-        <!-- DataTemplates pentru a mapa ViewModels la Views -->
-        <!-- Acest lucru permite ca ContentControl să afișeze vederea corectă
-             bazându-se pe tipul CurrentViewModel din MainViewModel -->
+        <!-- Convertoare -->
+        <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
+        <converters:NullOrEmptyStringToVisibilityConverter x:Key="NullOrEmptyStringToVisibilityConverter"/>
 
+
+        <!-- DataTemplates pentru a mapa ViewModels la Views (UserControls) -->
         <DataTemplate DataType="{x:Type vm:LoginViewModel}">
             <views:LoginView/>
         </DataTemplate>
@@ -22,24 +25,25 @@
             <views:RegistrationView/>
         </DataTemplate>
 
-        <DataTemplate DataType="{x:Type vm:CategoryManagementViewModel}">
-            <views:CategoryManagementView/>
-        </DataTemplate>
-
-        <DataTemplate DataType="{x:Type vm:AlergenManagementViewModel}">
-            <views:AlergenManagementView/>
-        </DataTemplate>
-
-        <DataTemplate DataType="{x:Type vm:PreparatManagementViewModel}">
-            <views:PreparatManagementView/>
-        </DataTemplate>
-
-        <DataTemplate DataType="{x:Type vm:MeniuManagementViewModel}">
-            <views:MeniuManagementView/>
+        <DataTemplate DataType="{x:Type vm:RestaurantMenuViewModel}">
+            <views:RestaurantMenuView/>
         </DataTemplate>
 
         <DataTemplate DataType="{x:Type vm:EmployeeDashboardViewModel}">
             <views:EmployeeDashboardView/>
+        </DataTemplate>
+
+        <DataTemplate DataType="{x:Type vm:CategoryManagementViewModel}">
+            <views:CategoryManagementView/>
+        </DataTemplate>
+        <DataTemplate DataType="{x:Type vm:AlergenManagementViewModel}">
+            <views:AlergenManagementView/>
+        </DataTemplate>
+        <DataTemplate DataType="{x:Type vm:PreparatManagementViewModel}">
+            <views:PreparatManagementView/>
+        </DataTemplate>
+        <DataTemplate DataType="{x:Type vm:MeniuManagementViewModel}">
+            <views:MeniuManagementView/>
         </DataTemplate>
 
     </Window.Resources>
@@ -47,39 +51,71 @@
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
-            <!-- Rând pentru bara de navigare/acțiuni -->
+            <!-- Rând pentru bara de sus (acțiuni globale) -->
             <RowDefinition Height="*"/>
             <!-- Rând pentru conținutul principal -->
         </Grid.RowDefinitions>
 
-        <!-- Bara de Navigare/Acțiuni (vizibilă după login) -->
-        <Border Grid.Row="0" Background="#FFE0E0E0" Padding="5"
-        Visibility="{Binding IsUserLoggedIn, Converter={StaticResource BooleanToVisibilityConverter}}">
-            <!-- Folosim un Grid în loc de StackPanel pentru bara de acțiuni -->
+        <!-- Bara de Sus cu Acțiuni Globale -->
+        <Border Grid.Row="0" Background="#F0F0F0" Padding="10" BorderThickness="0,0,0,1" BorderBrush="#CCCCCC">
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto"/>
-                    <!-- Pentru butonul Înapoi -->
+                    <!-- Buton Înapoi (dacă CurrentViewModel nu e un dashboard/login) -->
                     <ColumnDefinition Width="*"/>
-                    <!-- Spațiu care se extinde -->
+                    <!-- Spațiu care se extinde / Titlu Aplicație -->
                     <ColumnDefinition Width="Auto"/>
-                    <!-- Pentru butonul Logout -->
+                    <!-- Informații Utilizator / Butoane Login/Logout -->
                 </Grid.ColumnDefinitions>
 
+                <!-- Butonul Înapoi - vizibil doar când comanda NavigateBackCommand poate fi executată -->
                 <Button Grid.Column="0" Content="Înapoi"
-                Command="{Binding NavigateBackCommand}"
-                Padding="10,5" Margin="5" VerticalAlignment="Center"/>
+                        Command="{Binding NavigateBackCommand}"
+                        Padding="10,5" Margin="0,0,10,0" VerticalAlignment="Center"
+                        ToolTip="Mergi la vederea anterioară/dashboard"/>
+                <!-- Vizibilitatea este controlată de CanExecute al comenzii, nu mai e nevoie de Visibility binding aici
+                             dacă IRelayCommand gestionează asta (CommunityToolkit.Mvvm o face). -->
 
-                <!-- Butonul Logout va fi aliniat la dreapta datorită Width="*" pe coloana din mijloc -->
-                <Button Grid.Column="2" Content="Logout"
-                Command="{Binding LogoutCommand}"
-                Padding="10,5" Margin="5" VerticalAlignment="Center"/>
+                <!-- Titlu Aplicație sau Informații Contextuale (Opțional) -->
+                <TextBlock Grid.Column="1" Text="Restaurant Manager Deluxe" FontSize="18" FontWeight="Bold" 
+                           VerticalAlignment="Center" HorizontalAlignment="Left" Margin="10,0"/>
+
+                <!-- Acțiuni Utilizator (Login/Logout) -->
+                <StackPanel Grid.Column="2" Orientation="Horizontal" HorizontalAlignment="Right">
+                    <!-- Mesaj de bun venit și Nume Utilizator (când e logat) -->
+                    <TextBlock VerticalAlignment="Center" Margin="0,0,10,0"
+                               Visibility="{Binding IsUserLoggedIn, Converter={StaticResource BooleanToVisibilityConverter}}">
+                        <Run Text="Bun venit,"/>
+                        <Run Text="{Binding NumeUtilizatorLogat, Mode=OneWay, FallbackValue='Utilizator'}" FontWeight="SemiBold"/>
+                        <!-- Pentru a accesa _authenticationService.CurrentUser.Nume direct, _authenticationService
+                             ar trebui să fie o proprietate publică în MainViewModel sau să ai o proprietate
+                             dedicată `NumeUtilizatorLogat` în MainViewModel.
+                             Momentan, am pus un placeholder.
+                        -->
+                        <!-- Alternativ, o proprietate în MainViewModel:
+                        <Run Text="{Binding NumeUtilizatorLogat, FallbackValue='Utilizator'}" FontWeight="SemiBold"/>
+                        -->
+                    </TextBlock>
+
+                    <!-- Butonul Autentificare / Cont Nou (când NU e logat) -->
+                    <Button Content="Autentificare / Cont Nou"
+                            Command="{Binding NavigateToLoginCommand}"
+                            Visibility="{Binding IsUserNotLoggedIn, Converter={StaticResource BooleanToVisibilityConverter}}"
+                            Padding="10,5" Margin="5,0,0,0" Background="#FF5CB85C" Foreground="White" BorderThickness="0"/>
+
+                    <!-- Butonul Logout (când ESTE logat) -->
+                    <Button Content="Logout"
+                            Command="{Binding LogoutCommand}"
+                            Visibility="{Binding IsUserLoggedIn, Converter={StaticResource BooleanToVisibilityConverter}}"
+                            Padding="10,5" Margin="5,0,0,0" Background="#FFD9534F" Foreground="White" BorderThickness="0"/>
+                </StackPanel>
             </Grid>
         </Border>
 
-
         <!-- ContentControl pentru Vederile Curente -->
-        <ContentControl Grid.Row="1" Content="{Binding CurrentViewModel}" Margin="5"/>
+        <!-- Margin="5" a fost eliminat de aici pentru ca UserControl-urile să poată ocupa tot spațiul
+             și să-și gestioneze propriile margini interne dacă este necesar. -->
+        <ContentControl Grid.Row="1" Content="{Binding CurrentViewModel}"/>
 
     </Grid>
 </Window>

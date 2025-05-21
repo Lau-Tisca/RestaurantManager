@@ -1,13 +1,14 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using RestaurantManagerApp.Data; // Pentru RestaurantContext
 using RestaurantManagerApp.DataAccess;
-using RestaurantManagerApp.ViewModels;
-using RestaurantManagerApp.Views;
 // using RestaurantManagerApp.ViewModels;
 using RestaurantManagerApp.Services;
-using System.Windows;
+using RestaurantManagerApp.Utils;
+using RestaurantManagerApp.ViewModels;
+using RestaurantManagerApp.Views;
 using System.Globalization;
 using System.Threading;
+using System.Windows;
 
 namespace RestaurantManagerApp
 {
@@ -38,7 +39,21 @@ namespace RestaurantManagerApp
             // în OnConfiguring sau dacă îi dăm opțiunile direct aici.
             // Deoarece am configurat deja UseSqlServer în OnConfiguring din RestaurantContext,
             // un simplu AddDbContext<RestaurantContext>() ar trebui să fie suficient.
+
             services.AddDbContext<RestaurantContext>();
+
+            services.AddSingleton<ApplicationSettings>(sp =>
+            {
+                var settings = ConfigurationHelper.GetApplicationSettings();
+                if (settings == null)
+                {
+                    System.Diagnostics.Debug.WriteLine("AVERTISMENT: ApplicationSettings nu s-au putut încărca din appsettings.json. Se folosesc valori default din constructorul ApplicationSettings.");
+                    return new ApplicationSettings(); // Returnează setări default dacă încărcarea eșuează
+                }
+                return settings;
+            });
+
+            // Repository-uri
             services.AddTransient<ICategorieRepository, CategorieRepository>();
             services.AddTransient<IAlergenRepository, AlergenRepository>();
             services.AddTransient<IPreparatRepository, PreparatRepository>();
@@ -55,9 +70,10 @@ namespace RestaurantManagerApp
             services.AddTransient<AlergenManagementViewModel>();
             services.AddTransient<PreparatManagementViewModel>();
             services.AddTransient<MeniuManagementViewModel>();
+            services.AddTransient<RestaurantMenuViewModel>();
             services.AddTransient<MainViewModel>();
-            services.AddTransient<MainWindow>();
             services.AddTransient<EmployeeDashboardViewModel>();
+            services.AddTransient<MainWindow>();
 
             // Views (ca UserControls, nu Windows, dacă sunt în ContentControl)
             // Vom modifica acest aspect la pasul următor
