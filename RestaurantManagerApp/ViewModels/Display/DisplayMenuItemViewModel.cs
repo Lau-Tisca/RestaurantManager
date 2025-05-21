@@ -1,6 +1,5 @@
-﻿using CommunityToolkit.Mvvm.ComponentModel;
-using RestaurantManagerApp.Models; // Pentru a putea stoca obiectul original
-using System.Collections.Generic;
+﻿// ViewModels/Display/DisplayMenuItemViewModel.cs
+using CommunityToolkit.Mvvm.ComponentModel;
 
 namespace RestaurantManagerApp.ViewModels.Display
 {
@@ -10,7 +9,7 @@ namespace RestaurantManagerApp.ViewModels.Display
         private string _denumire = string.Empty;
 
         [ObservableProperty]
-        private string _pretAfisat = string.Empty; // Formatat ca "XX.YY RON"
+        private string _pretAfisat = string.Empty;
 
         [ObservableProperty]
         private string? _descriere;
@@ -18,17 +17,18 @@ namespace RestaurantManagerApp.ViewModels.Display
         [ObservableProperty]
         private string? _caleImagine;
 
+        // Vom folosi această proprietate pentru afișare în XAML
         [ObservableProperty]
-        private string _cantitatePortie = string.Empty; // Ex: "300g", "1 buc"
+        private string _detaliiCantitateAfisata = string.Empty;
 
         [ObservableProperty]
-        private string _alergeniAfisati = string.Empty; // Ex: "Gluten, Lactoză" sau "Fără alergeni cunoscuți"
+        private string _alergeniAfisati = string.Empty;
 
         [ObservableProperty]
         private bool _esteDisponibil = true;
 
         public abstract bool EsteMeniuCompus { get; }
-        public abstract int OriginalId { get; } // Pentru identificare
-        public abstract object OriginalItem { get; } // Pentru referința la modelul original
+        public abstract int OriginalId { get; }
+        public abstract object OriginalItem { get; }
     }
 }

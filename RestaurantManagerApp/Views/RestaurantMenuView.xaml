@@ -6,32 +6,44 @@
              xmlns:local="clr-namespace:RestaurantManagerApp.Views"
              xmlns:vm="clr-namespace:RestaurantManagerApp.ViewModels"
              xmlns:displayVm="clr-namespace:RestaurantManagerApp.ViewModels.Display"
+             xmlns:converters="clr-namespace:RestaurantManagerApp.Converters"
              mc:Ignorable="d"
              d:DataContext="{d:DesignInstance Type=vm:RestaurantMenuViewModel, IsDesignTimeCreatable=True}"
              d:DesignHeight="700" d:DesignWidth="900" Loaded="UserControl_Loaded">
 
     <UserControl.Resources>
         <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
+        <converters:NullOrEmptyToBooleanConverterForImage x:Key="NullOrEmptyToBooleanConverterForImage"/>
+        <converters:PathToImageSourceConverter x:Key="PathToImageSourceConverter" />
 
-        <!-- DataTemplate pentru un element din meniu (Preparat sau Meniu Compus) -->
+        <!-- DataTemplate specific pentru DisplayPreparatViewModel (dacă e nevoie de diferențe) -->
+        <!-- <DataTemplate DataType="{x:Type displayVm:DisplayPreparatViewModel}" BasedOn="{StaticResource MenuItemDataTemplate}"/> -->
+
+        <!-- În Views/RestaurantMenuView.xaml -> UserControl.Resources -> MenuItemDataTemplate -->
         <DataTemplate x:Key="MenuItemDataTemplate" DataType="{x:Type displayVm:DisplayMenuItemViewModel}">
             <Border BorderBrush="LightGray" BorderThickness="1" Margin="5" Padding="10" MinWidth="200" MaxWidth="300">
                 <StackPanel>
-                    <Image Source="{Binding CaleImagine, FallbackValue='pack://application:,,,/Resources/default_image_placeholder.png'}" Stretch="UniformToFill" Height="150" Margin="0,0,0,5"/>
+                    <Image Source="{Binding CaleImagine, Converter={StaticResource PathToImageSourceConverter}}" Stretch="UniformToFill" Height="150" Margin="0,0,0,5"/>
                     <TextBlock Text="{Binding Denumire}" FontWeight="Bold" FontSize="16" TextWrapping="Wrap"/>
                     <TextBlock Text="{Binding PretAfisat}" Foreground="DarkGreen" FontWeight="SemiBold" Margin="0,2"/>
-                    <TextBlock Text="{Binding CantitatePortie}" FontSize="12" FontStyle="Italic" Margin="0,2"/>
+
+                    <!-- TextBlock UNIC pentru detalii cantitate/gramaj -->
+                    <TextBlock Text="{Binding DetaliiCantitateAfisata, FallbackValue='N/A'}" FontSize="12" FontStyle="Italic" Margin="0,2"/>
+
                     <TextBlock Text="{Binding Descriere}" FontSize="12" TextWrapping="Wrap" MaxHeight="60" TextTrimming="CharacterEllipsis" Margin="0,5"
-                               Visibility="{Binding Descriere, Converter={StaticResource NullOrEmptyStringToVisibilityConverter}, ConverterParameter=invert}"/>
+                       Visibility="{Binding Descriere, Converter={StaticResource NullOrEmptyStringToVisibilityConverter}, ConverterParameter=invert}"/>
                     <TextBlock Margin="0,5">
-                        <Run Text="Alergeni: " FontWeight="SemiBold"/>
-                        <Run Text="{Binding AlergeniAfisati, FallbackValue='N/A'}"/>
+                <Run Text="Alergeni: " FontWeight="SemiBold"/>
+                <Run Text="{Binding AlergeniAfisati, FallbackValue='N/A'}"/>
                     </TextBlock>
+
+                    <!-- Afișare INDISPONIBIL folosind DataTrigger -->
                     <TextBlock HorizontalAlignment="Center" Margin="0,5" FontWeight="Bold">
                         <TextBlock.Style>
                             <Style TargetType="TextBlock">
                                 <Setter Property="Text" Value=""/>
                                 <Setter Property="Foreground" Value="Transparent"/>
+                                <!-- Sau culoarea de fundal -->
                                 <Style.Triggers>
                                     <DataTrigger Binding="{Binding EsteDisponibil}" Value="False">
                                         <Setter Property="Text" Value="INDISPONIBIL"/>
@@ -41,19 +53,14 @@
                             </Style>
                         </TextBlock.Style>
                     </TextBlock>
+
                     <Button Content="Adaugă în Coș" Margin="0,10,0,0" Padding="5"
-                            Command="{Binding DataContext.AddToCartCommand, RelativeSource={RelativeSource AncestorType={x:Type local:RestaurantMenuView}}}"
-                            CommandParameter="{Binding}"
-                            Visibility="{Binding DataContext.IsClientLoggedIn, RelativeSource={RelativeSource AncestorType={x:Type local:RestaurantMenuView}}, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                    Command="{Binding DataContext.AddToCartCommand, RelativeSource={RelativeSource AncestorType={x:Type UserControl}}}" 
+                    CommandParameter="{Binding}"
+                    Visibility="{Binding DataContext.IsClientLoggedIn, RelativeSource={RelativeSource AncestorType={x:Type UserControl}}, Converter={StaticResource BooleanToVisibilityConverter}}"/>
                 </StackPanel>
             </Border>
         </DataTemplate>
-
-        <!-- DataTemplate specific pentru DisplayPreparatViewModel (dacă e nevoie de diferențe) -->
-        <!-- <DataTemplate DataType="{x:Type displayVm:DisplayPreparatViewModel}" BasedOn="{StaticResource MenuItemDataTemplate}"/> -->
-
-        <!-- DataTemplate specific pentru DisplayMeniuViewModel (dacă e nevoie de diferențe) -->
-        <!-- <DataTemplate DataType="{x:Type displayVm:DisplayMeniuViewModel}" BasedOn="{StaticResource MenuItemDataTemplate}"/> -->
     </UserControl.Resources>
 
     <Grid>

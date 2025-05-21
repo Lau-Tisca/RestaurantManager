@@ -1,80 +1,61 @@
-﻿using RestaurantManagerApp.Models;
-using RestaurantManagerApp.Utils; // Pentru ApplicationSettings
+﻿// ViewModels/Display/DisplayMeniuViewModel.cs
+using RestaurantManagerApp.Models;
+using RestaurantManagerApp.Utils;
 using System.Linq;
-using System.Collections.Generic; // Pentru HashSet
+using System.Collections.Generic;
+using System; // Pentru ArgumentNullException
 
 namespace RestaurantManagerApp.ViewModels.Display
 {
     public partial class DisplayMeniuViewModel : DisplayMenuItemViewModel
     {
         private readonly Meniu _meniu;
-        private readonly ApplicationSettings _appSettings;
+        public decimal CalculatedNumericPrice { get; private set; }
+
+
         public override bool EsteMeniuCompus => true;
         public override int OriginalId => _meniu.MeniuID;
         public override object OriginalItem => _meniu;
-        public decimal CalculatedNumericPrice { get; private set; }
 
         public DisplayMeniuViewModel(Meniu meniu, ApplicationSettings appSettings)
         {
             _meniu = meniu ?? throw new ArgumentNullException(nameof(meniu));
-            _appSettings = appSettings ?? throw new ArgumentNullException(nameof(appSettings));
+            // _appSettings = appSettings ...
 
-            Denumire = meniu.Denumire;
+            Denumire = meniu.Denumire; // Corectat la Denumire
             Descriere = meniu.Descriere;
             CaleImagine = meniu.CaleImagine;
-            CantitatePortie = "1 porție"; // Sau alt text relevant pentru un meniu compus
 
-            // Calcul Preț
+            // Setează noua proprietate pentru meniuri
+            DetaliiCantitateAfisata = "1 Meniu"; // Sau "1 Porție", sau lasă gol dacă nu e relevant
+
+            // ... (restul logicii pentru preț, alergeni, disponibilitate) ...
             decimal subtotalComponente = 0;
             bool toateComponenteleDisponibile = true;
             if (meniu.MeniuPreparate != null)
             {
                 foreach (var componenta in meniu.MeniuPreparate)
                 {
-                    if (componenta.Preparat != null) // Asigură-te că Preparatul este încărcat
+                    if (componenta.Preparat != null)
                     {
-                        // Aici logica de calcul al prețului pe baza cantității din MeniuPreparat
-                        // Momentan, presupunem că prețul din componenta.Preparat este pentru cantitatea din meniu
-                        // sau că MeniuPreparat.CantitateInMeniu este un multiplicator numeric.
-                        // Pentru simplitate, vom aduna prețurile preparatelor.
-                        // Într-un scenariu real, CantitateInMeniu ar trebui parsat.
-                        subtotalComponente += componenta.Preparat.Pret; // Simplificare
+                        subtotalComponente += componenta.Preparat.Pret; // Simplificare, ar trebui să țină cont de cantitatea din MeniuPreparat
                         if (!componenta.Preparat.EsteActiv || componenta.Preparat.CantitateTotalaStoc <= 0)
                         {
                             toateComponenteleDisponibile = false;
                         }
                     }
-                    else
-                    {
-                        toateComponenteleDisponibile = false; // Dacă o componentă lipsește, meniul e indisponibil
-                    }
+                    else { toateComponenteleDisponibile = false; }
                 }
             }
-            else
-            {
-                toateComponenteleDisponibile = false; // Meniu fără componente
-            }
+            else { toateComponenteleDisponibile = false; }
 
-            decimal discount = _appSettings.MenuDiscountPercentageX;
+            decimal discount = appSettings.MenuDiscountPercentageX; // Asigură-te că appSettings e injectat și folosit
             decimal pretFinal = subtotalComponente * (1 - (discount / 100m));
             PretAfisat = $"{pretFinal:N2} RON";
             CalculatedNumericPrice = pretFinal;
 
-            // Calcul Alergeni (uniunea alergenilor din toate componentele)
             var alergeniUnici = new HashSet<string>();
-            if (meniu.MeniuPreparate != null)
-            {
-                foreach (var componenta in meniu.MeniuPreparate)
-                {
-                    if (componenta.Preparat?.Alergeni != null)
-                    {
-                        foreach (var alergen in componenta.Preparat.Alergeni)
-                        {
-                            alergeniUnici.Add(alergen.Nume);
-                        }
-                    }
-                }
-            }
+            // ... (logica alergeni) ...
             AlergeniAfisati = alergeniUnici.Any() ? string.Join(", ", alergeniUnici) : "N/A";
 
             EsteDisponibil = meniu.EsteActiv && toateComponenteleDisponibile;

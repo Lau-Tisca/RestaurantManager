@@ -1,11 +1,15 @@
-﻿using RestaurantManagerApp.Models;
+﻿// ViewModels/Display/DisplayPreparatViewModel.cs
+using RestaurantManagerApp.Models;
 using System.Linq;
+using System.Text.RegularExpressions;
+using System; // Pentru StringComparison
 
 namespace RestaurantManagerApp.ViewModels.Display
 {
     public partial class DisplayPreparatViewModel : DisplayMenuItemViewModel
     {
         private readonly Preparat _preparat;
+
         public override bool EsteMeniuCompus => false;
         public override int OriginalId => _preparat.PreparatID;
         public override object OriginalItem => _preparat;
@@ -15,10 +19,12 @@ namespace RestaurantManagerApp.ViewModels.Display
             _preparat = preparat ?? throw new ArgumentNullException(nameof(preparat));
 
             Denumire = preparat.Denumire;
-            PretAfisat = $"{preparat.Pret:N2} RON"; // N2 formatează cu 2 zecimale
+            PretAfisat = $"{preparat.Pret:N2} RON";
             Descriere = preparat.Descriere;
-            CaleImagine = preparat.CaleImagine; // Ar trebui să fie o cale relativă la un folder de imagini
-            CantitatePortie = preparat.CantitatePortie;
+            CaleImagine = preparat.CaleImagine;
+
+            // Setează noua proprietate DetaliiCantitateAfisata
+            DetaliiCantitateAfisata = ExtractGramsForDisplay(preparat.CantitatePortie, preparat.UnitateMasuraStoc);
 
             if (preparat.Alergeni != null && preparat.Alergeni.Any())
             {
@@ -26,15 +32,36 @@ namespace RestaurantManagerApp.ViewModels.Display
             }
             else
             {
-                AlergeniAfisati = "N/A"; // Sau "Fără alergeni specificați"
+                AlergeniAfisati = "N/A";
+            }
+            EsteDisponibil = preparat.EsteActiv && preparat.CantitateTotalaStoc > 0;
+        }
+
+        private string ExtractGramsForDisplay(string cantitatePortieOriginala, string unitateStoc)
+        {
+            if (string.IsNullOrWhiteSpace(cantitatePortieOriginala)) return "N/A";
+
+            // Încercare de a găsi explicit "g" sau "grame" etc.
+            Match gMatch = Regex.Match(cantitatePortieOriginala, @"(\d+[\.,]?\d*)\s*(g|gr|gram|grame)\b", RegexOptions.IgnoreCase);
+            if (gMatch.Success)
+            {
+                return $"{gMatch.Groups[1].Value.Trim()}g"; // Curăță spațiile din număr
             }
 
-            // Logica de disponibilitate:
-            // De exemplu, dacă stocul e numeric și avem un prag.
-            // Sau dacă e un flag direct pe preparat.
-            // Momentan, vom presupune că dacă e activ, e disponibil.
-            // Stocul va fi verificat la adăugarea în coș.
-            EsteDisponibil = preparat.EsteActiv && preparat.CantitateTotalaStoc > 0; // Exemplu simplu
+            // Dacă unitatea de stoc principală este "g" și CantitatePortie conține un număr, presupunem că sunt grame
+            if (unitateStoc.Equals("g", StringComparison.OrdinalIgnoreCase))
+            {
+                Match numMatch = Regex.Match(cantitatePortieOriginala, @"\d+[\.,]?\d*");
+                if (numMatch.Success)
+                {
+                    return $"{numMatch.Value.Trim()}g";
+                }
+            }
+
+            // Fallback: dacă nu sunt identificate grame, afișează cantitatea originală a porției
+            // sau "N/A" dacă vrei să afișezi gramajul doar dacă e explicit "g"
+            // return "N/A"; // Dacă vrei să arăți doar dacă sunt grame
+            return cantitatePortieOriginala; // Afișează ce era în CantitatePortie
         }
     }
 }
