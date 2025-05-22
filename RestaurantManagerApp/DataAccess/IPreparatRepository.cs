@@ -8,6 +8,7 @@ namespace RestaurantManagerApp.DataAccess
     {
         Task<List<Preparat>> GetAllAsync(); // Poate cu opțiune de a include Categoria și Alergenii
         Task<List<Preparat>> GetAllActiveWithDetailsAsync(); // Include Categorie și Alergeni
+        Task<decimal?> GetAvailableStockByIdAsync(int preparatId);
         Task<Preparat?> GetByIdAsync(int id);
         Task<Preparat?> GetByIdWithDetailsAsync(int id); // Include Categorie și Alergeni
         Task<int> AddAsync(Preparat preparat, List<int> alergenIds); // Returnează ID-ul noului preparat

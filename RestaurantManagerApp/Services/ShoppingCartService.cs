@@ -1,10 +1,12 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel; // Pentru ObservableObject
 using RestaurantManagerApp.ViewModels.Display; // Pentru DisplayMenuItemViewModel
+using RestaurantManagerApp.ViewModels;
 using System;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized; // Pentru NotifyCollectionChangedEventArgs
 using System.ComponentModel; // Pentru INotifyPropertyChanged și PropertyChangedEventArgs
 using System.Linq;
+using System.Windows;
 
 namespace RestaurantManagerApp.Services
 {
@@ -43,9 +45,7 @@ namespace RestaurantManagerApp.Services
 
             if (existingCartItem != null)
             {
-                System.Diagnostics.Debug.WriteLine($"  AddItemToCart: Produs existent găsit: '{existingCartItem.MenuItem.Denumire}'. Cantitate veche: {existingCartItem.Quantity}. Se adaugă: {quantityToAdd}");
-                existingCartItem.Quantity += quantityToAdd; // Aceasta va declanșa PropertyChanged pe existingCartItem
-                                                            // care va fi prins de CartItem_PropertyChanged
+                MessageBox.Show($"Produsul '{existingCartItem.MenuItem.Denumire}' există deja în coș. Puteți modifica cantitatea din coș.", "Produs Existent", MessageBoxButton.OK, MessageBoxImage.Information);
             }
             else
             {
@@ -54,7 +54,6 @@ namespace RestaurantManagerApp.Services
                 // care se va ocupa de abonarea la PropertyChanged al noului item.
                 _cartItems.Add(new CartItemViewModel(newItemVm, quantityToAdd));
             }
-            // NotifyCartChanged(); // Nu mai este necesar direct aici, va fi apelat de CollectionChanged sau PropertyChanged al item-ului
         }
 
         // Metodă publică pentru ștergerea unui item din coș

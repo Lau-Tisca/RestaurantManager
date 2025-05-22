@@ -59,6 +59,7 @@ namespace RestaurantManagerApp
             services.AddTransient<IPreparatRepository, PreparatRepository>();
             services.AddTransient<IMeniuRepository, MeniuRepository>();
             services.AddTransient<IUtilizatorRepository, UtilizatorRepository>();
+            services.AddTransient<IOrderRepository, OrderRepository>();
 
             // Servicii
             services.AddSingleton<IAuthenticationService, AuthenticationService>();
@@ -73,6 +74,7 @@ namespace RestaurantManagerApp
             services.AddTransient<MeniuManagementViewModel>();
             services.AddTransient<RestaurantMenuViewModel>();
             services.AddTransient<ShoppingCartViewModel>();
+            services.AddTransient<OrderCheckoutViewModel>();
             services.AddTransient<MainViewModel>();
             services.AddTransient<EmployeeDashboardViewModel>();
             services.AddTransient<MainWindow>();
@@ -84,7 +86,7 @@ namespace RestaurantManagerApp
             // Pentru DataTemplates, nu e nevoie să le înregistrăm în DI ca tipuri de View.
         }
 
-        protected override void OnStartup(StartupEventArgs e)
+        protected override async void OnStartup(StartupEventArgs e)
         {
             base.OnStartup(e);
 
@@ -108,8 +110,13 @@ namespace RestaurantManagerApp
             //meniuManagementView?.Show();
 
             var mainWindow = ServiceProvider.GetService<MainWindow>();
-            if (mainWindow != null)
+            var mainViewModel = ServiceProvider.GetService<MainViewModel>();
+            if (mainWindow != null&& mainViewModel != null)
             {
+                // Setează DataContext-ul MainWindow la MainViewModel
+                mainWindow.DataContext = mainViewModel;
+
+                await mainViewModel.InitializeMainViewModelAsync();
                 mainWindow.Show();
             }
             else
