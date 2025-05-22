@@ -23,6 +23,7 @@ namespace RestaurantManagerApp.DataAccess
                                  .Include(m => m.Categorie)
                                  .Include(m => m.MeniuPreparate) // Include tabela de joncțiune
                                      .ThenInclude(mp => mp.Preparat) // Apoi, din joncțiune, include Preparatul
+                                        .ThenInclude(p => p.Alergeni)
                                  .OrderBy(m => m.Denumire)
                                  .ToListAsync();
         }
@@ -34,6 +35,7 @@ namespace RestaurantManagerApp.DataAccess
                                  .Include(m => m.Categorie)
                                  .Include(m => m.MeniuPreparate)
                                      .ThenInclude(mp => mp.Preparat)
+                                        .ThenInclude(p => p.Alergeni)
                                  .FirstOrDefaultAsync();
         }
 

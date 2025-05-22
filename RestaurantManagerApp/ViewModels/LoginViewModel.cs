@@ -90,7 +90,6 @@ namespace RestaurantManagerApp.ViewModels
 
             if (utilizator != null)
             {
-                MessageBox.Show($"Autentificare reușită ca {utilizator.NumeComplet()} ({utilizator.TipUtilizator})!", "Succes", MessageBoxButton.OK, MessageBoxImage.Information);
                 if (OnLoginSuccessAsync != null)
                 {
                     await OnLoginSuccessAsync.Invoke();

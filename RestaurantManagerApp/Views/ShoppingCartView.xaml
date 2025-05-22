@@ -1,0 +1,115 @@
+﻿<UserControl x:Class="RestaurantManagerApp.Views.ShoppingCartView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:local="clr-namespace:RestaurantManagerApp.Views"
+             xmlns:vm="clr-namespace:RestaurantManagerApp.ViewModels"
+             xmlns:converters="clr-namespace:RestaurantManagerApp.Converters"
+             xmlns:services="clr-namespace:RestaurantManagerApp.Services"
+             mc:Ignorable="d"
+             d:DataContext="{d:DesignInstance Type=vm:ShoppingCartViewModel, IsDesignTimeCreatable=True}"
+             d:DesignHeight="500" d:DesignWidth="600" Loaded="UserControl_Loaded">
+
+    <UserControl.Resources>
+        <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
+        <converters:NullOrEmptyStringToVisibilityConverter x:Key="NullOrEmptyStringToVisibilityConverter" />
+        <converters:ZeroToVisibilityConverter x:Key="ZeroToVisibilityConverter" />
+    </UserControl.Resources>
+
+    <Grid Margin="15">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <!-- Titlu -->
+            <RowDefinition Height="*"/>
+            <!-- Lista iteme coș -->
+            <RowDefinition Height="Auto"/>
+            <!-- Totaluri și acțiuni -->
+        </Grid.RowDefinitions>
+
+        <TextBlock Grid.Row="0" Text="Coșul tău de Cumpărături" FontSize="20" FontWeight="Bold" Margin="0,0,0,15" HorizontalAlignment="Center"/>
+
+        <!-- Afișează un mesaj dacă coșul este gol -->
+        <TextBlock Grid.Row="1" Text="Coșul tău este gol." FontSize="16" HorizontalAlignment="Center" VerticalAlignment="Center"
+                   Visibility="{Binding TotalItems, Converter={StaticResource ZeroToVisibilityConverter}, ConverterParameter=invert}"/>
+        <!-- Pentru ZeroToVisibilityConverter, va trebui să-l creăm.
+                        Alternativ, o proprietate bool 'IsCartEmpty' în ViewModel. -->
+
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto"
+                      Visibility="{Binding TotalItems, Converter={StaticResource ZeroToVisibilityConverter}}">
+            <!-- Afișează lista doar dacă NU e goală -->
+            <ItemsControl ItemsSource="{Binding CartItems}">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate DataType="{x:Type services:CartItemViewModel}">
+                        <!-- Atenție la namespace-ul lui CartItemViewModel -->
+                        <Border BorderBrush="LightGray" BorderThickness="0,0,0,1" Padding="10" Margin="0,5">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <!-- Nume, Preț Unitar -->
+                                    <ColumnDefinition Width="Auto"/>
+                                    <!-- Cantitate -->
+                                    <ColumnDefinition Width="Auto"/>
+                                    <!-- Preț Total Linie -->
+                                    <ColumnDefinition Width="Auto"/>
+                                    <!-- Buton Șterge -->
+                                </Grid.ColumnDefinitions>
+
+                                <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                                    <TextBlock Text="{Binding MenuItem.Denumire}" FontWeight="SemiBold"/>
+                                    <TextBlock Text="{Binding UnitPrice, StringFormat={}{0:C}, ConverterCulture='ro-RO'}" FontSize="12" Foreground="Gray"/>
+                                </StackPanel>
+
+                                <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center" Margin="10,0">
+                                    <TextBlock Text="Cant:" VerticalAlignment="Center" Margin="0,0,5,0"/>
+                                    <!-- Pentru editarea cantității, un TextBox ar fi mai potrivit.
+                                         Momentan, afișăm doar. Modificarea cantității necesită mai multă logică
+                                         (ex. comanda UpdateQuantityCommand sau binding TwoWay și notificare în serviciu) -->
+                                    <TextBox Text="{Binding Quantity, UpdateSourceTrigger=PropertyChanged, ValidatesOnNotifyDataErrors=True}" 
+                                             MinWidth="30" MaxLength="3" TextAlignment="Center" VerticalAlignment="Center"/>
+                                    <!-- Adaugă validare pe Quantity în CartItemViewModel dacă e cazul -->
+                                </StackPanel>
+
+                                <TextBlock Grid.Column="2" Text="{Binding TotalPrice, StringFormat={}{0:C}, ConverterCulture='ro-RO'}" 
+                                           FontWeight="Bold" VerticalAlignment="Center" Margin="10,0"/>
+
+                                <Button Grid.Column="3" Content="X" 
+                                        Command="{Binding DataContext.RemoveItemCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                        CommandParameter="{Binding}"
+                                        Background="IndianRed" Foreground="White" Padding="5,2" ToolTip="Șterge Produsul"
+                                        VerticalAlignment="Center" Margin="5,0,0,0"/>
+                            </Grid>
+                        </Border>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </ScrollViewer>
+
+        <Border Grid.Row="2" BorderBrush="Gray" BorderThickness="0,1,0,0" Padding="10" Margin="0,10,0,0"
+                Visibility="{Binding TotalItems, Converter={StaticResource ZeroToVisibilityConverter}}">
+            <!-- Afișează totalurile și acțiunile doar dacă NU e gol coșul -->
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <StackPanel Grid.Column="0" Orientation="Vertical">
+                    <TextBlock FontSize="16" Margin="0,0,0,5">
+                        <Run Text="Subtotal:"/>
+                        <Run Text="{Binding Subtotal, Mode=OneWay, StringFormat={}{0:C}, ConverterCulture='ro-RO'}" FontWeight="Bold"/>
+                    </TextBlock>
+                    <TextBlock FontSize="14">
+                        <Run Text="Total Produse:"/>
+                        <Run Text="{Binding TotalItems, Mode=OneWay}" FontWeight="Bold"/>
+                    </TextBlock>
+                </StackPanel>
+
+                <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Bottom">
+                    <Button Content="Golește Coșul" Command="{Binding ClearCartCommand}" Padding="10,5" Margin="0,0,10,0" Background="LightGoldenrodYellow"/>
+                    <Button Content="Finalizează Comanda" Command="{Binding ProceedToCheckoutCommand}" Padding="10,5" Background="LightGreen" FontWeight="Bold"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+    </Grid>
+</UserControl>
