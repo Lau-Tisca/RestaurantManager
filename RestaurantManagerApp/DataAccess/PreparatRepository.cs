@@ -33,6 +33,14 @@ namespace RestaurantManagerApp.DataAccess
                                  .ToListAsync();
         }
 
+        public async Task<decimal?> GetAvailableStockByIdAsync(int preparatId)
+        {
+            var preparat = await _context.Preparate
+                                         .AsNoTracking() // Nu avem nevoie să urmărim entitatea pentru o simplă citire de stoc
+                                         .FirstOrDefaultAsync(p => p.PreparatID == preparatId);
+            return preparat?.CantitateTotalaStoc; // Returnează stocul sau null dacă preparatul nu e găsit
+        }
+
         public async Task<Preparat?> GetByIdAsync(int id)
         {
             return await _context.Preparate.FindAsync(id);
@@ -169,24 +177,42 @@ namespace RestaurantManagerApp.DataAccess
             }
         }
 
-        public async Task UpdateStockAsync(int preparatId, decimal cantitateConsumata)
+        // În DataAccess/PreparatRepository.cs
+        public async Task UpdateStockAsync(int preparatId, decimal cantitateDeScazut)
         {
             var preparat = await _context.Preparate.FindAsync(preparatId);
             if (preparat != null)
             {
-                if (preparat.CantitateTotalaStoc >= cantitateConsumata)
+                if (cantitateDeScazut <= 0)
                 {
-                    preparat.CantitateTotalaStoc -= cantitateConsumata;
+                    System.Diagnostics.Debug.WriteLine($"UpdateStockAsync: Cantitate de scăzut ({cantitateDeScazut}) invalidă pentru PreparatID {preparatId}. Nu se face nicio modificare.");
+                    return; // Nu scădem dacă valoarea e zero sau negativă
+                }
+
+                if (preparat.CantitateTotalaStoc >= cantitateDeScazut)
+                {
+                    preparat.CantitateTotalaStoc -= cantitateDeScazut;
+                    System.Diagnostics.Debug.WriteLine($"UpdateStockAsync: Stoc actualizat pentru PreparatID {preparatId}. Stoc vechi: {preparat.CantitateTotalaStoc + cantitateDeScazut}, Scăzut: {cantitateDeScazut}, Stoc nou: {preparat.CantitateTotalaStoc}");
                     await _context.SaveChangesAsync();
                 }
                 else
                 {
-                    // Tratează cazul stocului insuficient (poate aruncă o excepție specifică)
-                    throw new InvalidOperationException($"Stoc insuficient pentru preparatul '{preparat.Denumire}'. Stoc actual: {preparat.CantitateTotalaStoc}, Cantitate cerută: {cantitateConsumata}");
+                    // Stoc insuficient. Logăm și poate aruncăm o excepție mai specifică sau setăm stocul la 0.
+                    // Pentru consistență, dacă o comandă a fost plasată, ar trebui să încercăm să onorăm,
+                    // dar acest lucru ar trebui verificat ÎNAINTE de a plasa comanda.
+                    // Aici, vom loga și vom seta stocul la 0 pentru a indica epuizarea.
+                    System.Diagnostics.Debug.WriteLine($"AVERTISMENT Stoc Insuficient: PreparatID {preparatId}. Stoc actual: {preparat.CantitateTotalaStoc}, Necesar: {cantitateDeScazut}. Stocul va fi setat la 0.");
+                    preparat.CantitateTotalaStoc = 0;
+                    // Poți adăuga un mecanism de notificare aici pentru admin.
+                    await _context.SaveChangesAsync();
+                    // Sau aruncă o excepție specifică dacă preferi ca operațiunea să eșueze explicit:
+                    // throw new InvalidOperationException($"Stoc insuficient pentru preparatul '{preparat.Denumire}'. Stoc actual: {preparat.CantitateTotalaStoc}, Cantitate necesară: {cantitateDeScazut}");
                 }
             }
             else
             {
+                System.Diagnostics.Debug.WriteLine($"EROARE UpdateStockAsync: Preparatul cu ID {preparatId} nu a fost găsit.");
+                // Aruncă o excepție sau gestionează altfel, deoarece acesta este un caz neașteptat dacă ID-ul vine dintr-o comandă validă.
                 throw new KeyNotFoundException($"Preparatul cu ID {preparatId} nu a fost găsit pentru actualizarea stocului.");
             }
         }

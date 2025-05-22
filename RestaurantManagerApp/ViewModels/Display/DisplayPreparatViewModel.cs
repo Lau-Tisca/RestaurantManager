@@ -9,7 +9,7 @@ namespace RestaurantManagerApp.ViewModels.Display
     public partial class DisplayPreparatViewModel : DisplayMenuItemViewModel
     {
         private readonly Preparat _preparat;
-
+        public decimal StocDisponibilLaMomentulAfisarii { get; private set; }
         public override bool EsteMeniuCompus => false;
         public override int OriginalId => _preparat.PreparatID;
         public override object OriginalItem => _preparat;
@@ -22,9 +22,8 @@ namespace RestaurantManagerApp.ViewModels.Display
             PretAfisat = $"{preparat.Pret:N2} RON";
             Descriere = preparat.Descriere;
             CaleImagine = preparat.CaleImagine;
-
-            // Setează noua proprietate DetaliiCantitateAfisata
             DetaliiCantitateAfisata = ExtractGramsForDisplay(preparat.CantitatePortie, preparat.UnitateMasuraStoc);
+            StocDisponibilSnapshot = preparat.CantitateTotalaStoc;
 
             if (preparat.Alergeni != null && preparat.Alergeni.Any())
             {
@@ -34,7 +33,7 @@ namespace RestaurantManagerApp.ViewModels.Display
             {
                 AlergeniAfisati = "N/A";
             }
-            EsteDisponibil = preparat.EsteActiv && preparat.CantitateTotalaStoc > 0;
+            EsteDisponibil = preparat.EsteActiv && StocDisponibilSnapshot > 0;
         }
 
         private string ExtractGramsForDisplay(string cantitatePortieOriginala, string unitateStoc)

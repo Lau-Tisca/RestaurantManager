@@ -27,6 +27,9 @@ namespace RestaurantManagerApp.ViewModels.Display
         [ObservableProperty]
         private bool _esteDisponibil = true;
 
+        [ObservableProperty]
+        private decimal _stocDisponibilSnapshot;
+
         public abstract bool EsteMeniuCompus { get; }
         public abstract int OriginalId { get; }
         public abstract object OriginalItem { get; }

@@ -26,6 +26,8 @@ namespace RestaurantManagerApp.ViewModels
         // [NotifyPropertyChangedFor(nameof(IsUserNotLoggedIn))] // Nu e nevoie aici dacă o facem în OnIsUserLoggedInChanged
         private bool _isUserLoggedIn = false;
 
+        private ObservableObject? _previousViewModelBeforeCheckout;
+
         // Proprietatea calculată inversă
         public bool IsUserNotLoggedIn => !IsUserLoggedIn;
 
@@ -81,8 +83,20 @@ namespace RestaurantManagerApp.ViewModels
             };
 
             // Starea inițială a aplicației: afișează meniul restaurantului
+            //NavigateToRestaurantMenu();
+            //UpdateLoginState(); // Actualizează starea vizibilității butoanelor Login/Logout
+        }
+
+        // Metodă de inițializare care poate fi apelată din App.xaml.cs după ce ServiceProvider e gata
+        public async Task InitializeMainViewModelAsync()
+        {
+            // Dacă RestaurantMenuViewModel are nevoie de încărcare la prima afișare
+            // și nu vrem să o facem sincron în constructorul MainViewModel.
+            // Dar RestaurantMenuView.UserControl_Loaded se ocupă de asta.
             NavigateToRestaurantMenu();
-            UpdateLoginState(); // Actualizează starea vizibilității butoanelor Login/Logout
+            UpdateLoginState();
+            // Aici ai putea încărca și alte date globale necesare pentru MainViewModel.
+            await Task.CompletedTask; // Placeholder dacă nu ai operații async aici
         }
 
         // Metodă apelată automat când _isUserLoggedIn (și deci IsUserLoggedIn) se schimbă
@@ -126,29 +140,39 @@ namespace RestaurantManagerApp.ViewModels
             // O logică mai bună pentru "Înapoi" ar fi necesară dacă ai mai multe niveluri de navigație
             // Momentan, e activ dacă nu suntem pe Login, Register sau un Dashboard principal
             return CurrentViewModel != null &&
-                   !(CurrentViewModel is LoginViewModel) &&
-                   !(CurrentViewModel is RegistrationViewModel) &&
                    !(CurrentViewModel is EmployeeDashboardViewModel) &&
-                   !(CurrentViewModel is RestaurantMenuViewModel && !IsUserLoggedIn); // Nu te duci înapoi de la meniul oaspetelui dacă nu ești logat
+                   !(CurrentViewModel is RestaurantMenuViewModel && !IsUserLoggedIn) && // Nu te duci înapoi de la meniul oaspetelui dacă nu ești logat
+                   !(CurrentViewModel is EmployeeDashboardViewModel) && // Nu te duci "înapoi" de la dashboard-ul principal al angajatului
+                   !(CurrentViewModel is RestaurantMenuViewModel && !IsUserLoggedIn) && // Nu te duci "înapoi" de la meniul oaspetelui ne-logat
+                   !(CurrentViewModel is RestaurantMenuViewModel && IsUserLoggedIn && _previousViewModelBeforeCheckout == null); // Nu te duci "înapoi" de la meniul clientului dacă e prima vedere după login
         }
 
         private void ExecuteNavigateBack()
         {
-            // Navigație simplificată "Înapoi":
-            // Dacă suntem într-o vedere de management (deschisă din EmployeeDashboard), ne întoarcem la EmployeeDashboard.
-            // Altfel, dacă suntem logați ca și client și nu suntem pe RestaurantMenu, ne întoarcem la RestaurantMenu.
-            // Altfel, la RestaurantMenu (landing page).
+            // Navigație simplificată "Înapoi"
+            if (_previousViewModelBeforeCheckout != null && CurrentViewModel is OrderCheckoutViewModel)
+            {
+                CurrentViewModel = _previousViewModelBeforeCheckout; // Revine la coș din checkout
+                _previousViewModelBeforeCheckout = null; // Resetează
+                return;
+            }
+
             if (_authenticationService.CurrentUser?.TipUtilizator == "Angajat" && !(CurrentViewModel is EmployeeDashboardViewModel))
             {
                 NavigateToEmployeeDashboard();
             }
-            else if (_authenticationService.CurrentUser?.TipUtilizator == "Client" && !(CurrentViewModel is RestaurantMenuViewModel)) // Presupunând că RestaurantMenu e "acasă" pentru client
+            else if (_authenticationService.CurrentUser?.TipUtilizator == "Client" && CurrentViewModel is ShoppingCartViewModel)
             {
-                NavigateToRestaurantMenu();
+                NavigateToRestaurantMenu(); // De la coș, înapoi la meniu
             }
-            else
+            else // Caz general sau oaspete
             {
-                NavigateToRestaurantMenu(); // Pagina default
+                // Dacă suntem pe o vedere de management și nu suntem angajați (caz improbabil), sau altceva
+                // Poate nu facem nimic sau mergem la pagina de start (RestaurantMenu)
+                if (!(CurrentViewModel is RestaurantMenuViewModel)) // Evită re-navigarea la sine
+                {
+                    NavigateToRestaurantMenu();
+                }
             }
         }
 
@@ -254,6 +278,34 @@ namespace RestaurantManagerApp.ViewModels
             CurrentViewModel = _serviceProvider.GetService<RestaurantMenuViewModel>();
         }
 
+        private void NavigateToOrderCheckout()
+        {
+            var checkoutVM = _serviceProvider.GetService<OrderCheckoutViewModel>();
+            if (checkoutVM != null)
+            {
+                checkoutVM.OnOrderPlacedSuccessfully = () => {
+                    // După ce comanda e plasată, navigăm la meniul principal
+                    // MainViewModel va recrea RestaurantMenuViewModel, care își va reîncărca datele.
+                    NavigateToRestaurantMenu();
+                    // Poți afișa un feedback suplimentar aici dacă dorești,
+                    // de ex., un mic banner "Comanda a fost plasată!" în MainWindow.
+                };
+                checkoutVM.OnCancelCheckout = () => {
+                    // Dacă anulează checkout-ul, ne întoarcem la vederea anterioară (probabil coșul)
+                    if (_previousViewModelBeforeCheckout != null)
+                    {
+                        CurrentViewModel = _previousViewModelBeforeCheckout;
+                    }
+                    else
+                    {
+                        ExecuteNavigateToShoppingCart(); // Fallback la coș dacă nu avem istoric simplu
+                    }
+                };
+                CurrentViewModel = checkoutVM;
+            }
+        }
+
+
         private void ExecuteLogout()
         {
             _authenticationService.Logout();
@@ -266,9 +318,19 @@ namespace RestaurantManagerApp.ViewModels
         private void ExecuteNavigateToAlergenManagement() => CurrentViewModel = _serviceProvider.GetService<AlergenManagementViewModel>();
         private void ExecuteNavigateToPreparatManagement() => CurrentViewModel = _serviceProvider.GetService<PreparatManagementViewModel>();
         private void ExecuteNavigateToMeniuManagement() => CurrentViewModel = _serviceProvider.GetService<MeniuManagementViewModel>();
+
         private void ExecuteNavigateToShoppingCart()
         {
-            CurrentViewModel = _serviceProvider.GetService<ShoppingCartViewModel>();
+            var cartVM = _serviceProvider.GetService<ShoppingCartViewModel>();
+            if (cartVM != null)
+            {
+                // Setăm acțiunea ce trebuie executată când utilizatorul vrea să finalizeze comanda
+                cartVM.OnProceedToCheckout = () => {
+                    _previousViewModelBeforeCheckout = CurrentViewModel; // Salvează vederea curentă (coșul)
+                    NavigateToOrderCheckout();
+                };
+                CurrentViewModel = cartVM;
+            }
         }
         public string CartItemCountDisplay => _shoppingCartService.TotalItems > 0 ? $"Coș ({_shoppingCartService.TotalItems})" : "Coș";
         private bool CanExecuteNavigateToShoppingCart() => _shoppingCartService.TotalItems > 0; // Sau mereu activ

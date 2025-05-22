@@ -89,7 +89,7 @@ namespace RestaurantManagerApp.ViewModels
                                          new MeniuPreparat { Preparat = meniu1CompPrep, PreparatID = 2, CantitateInMeniu = "150g" }
                                      }
             };
-            cat2.ElementeMeniu.Add(new DisplayMeniuViewModel(meniu1, _appSettings));
+            cat2.ElementeMeniu.Add(new DisplayMenuViewModel(meniu1, _appSettings));
             designCategories.Add(cat2);
 
             // Setează DisplayedMenu pentru design time
@@ -190,7 +190,7 @@ namespace RestaurantManagerApp.ViewModels
                     var meniuriInCategorie = meniuriDb.Where(m => m.CategorieID == categorie.CategorieID);
                     foreach (var meniu in meniuriInCategorie)
                     {
-                        displayCategory.ElementeMeniu.Add(new DisplayMeniuViewModel(meniu, _appSettings));
+                        displayCategory.ElementeMeniu.Add(new DisplayMenuViewModel(meniu, _appSettings));
                     }
                 }
                 catch (Exception ex)

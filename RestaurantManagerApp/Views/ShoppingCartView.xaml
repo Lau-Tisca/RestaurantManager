@@ -40,7 +40,7 @@
             <!-- Afișează lista doar dacă NU e goală -->
             <ItemsControl ItemsSource="{Binding CartItems}">
                 <ItemsControl.ItemTemplate>
-                    <DataTemplate DataType="{x:Type services:CartItemViewModel}">
+                    <DataTemplate DataType="{x:Type vm:CartItemViewModel}">
                         <!-- Atenție la namespace-ul lui CartItemViewModel -->
                         <Border BorderBrush="LightGray" BorderThickness="0,0,0,1" Padding="10" Margin="0,5">
                             <Grid>
@@ -57,20 +57,16 @@
 
                                 <StackPanel Grid.Column="0" VerticalAlignment="Center">
                                     <TextBlock Text="{Binding MenuItem.Denumire}" FontWeight="SemiBold"/>
-                                    <TextBlock Text="{Binding UnitPrice, StringFormat={}{0:C}, ConverterCulture='ro-RO'}" FontSize="12" Foreground="Gray"/>
+                                    <TextBlock Text="{Binding UnitPrice, Mode=OneWay, StringFormat={}{0:C}, ConverterCulture='ro-RO'}" FontSize="12" Foreground="Gray"/>
                                 </StackPanel>
 
                                 <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center" Margin="10,0">
-                                    <TextBlock Text="Cant:" VerticalAlignment="Center" Margin="0,0,5,0"/>
-                                    <!-- Pentru editarea cantității, un TextBox ar fi mai potrivit.
-                                         Momentan, afișăm doar. Modificarea cantității necesită mai multă logică
-                                         (ex. comanda UpdateQuantityCommand sau binding TwoWay și notificare în serviciu) -->
-                                    <TextBox Text="{Binding Quantity, UpdateSourceTrigger=PropertyChanged, ValidatesOnNotifyDataErrors=True}" 
-                                             MinWidth="30" MaxLength="3" TextAlignment="Center" VerticalAlignment="Center"/>
-                                    <!-- Adaugă validare pe Quantity în CartItemViewModel dacă e cazul -->
+                                    <Button Content="-" Command="{Binding DecrementQuantityCommand}" Padding="5,0" MinWidth="20"/>
+                                    <TextBlock Text="{Binding Quantity}" MinWidth="30" TextAlignment="Center" VerticalAlignment="Center" Margin="5,0"/>
+                                    <Button Content="+" Command="{Binding IncrementQuantityCommand}" Padding="5,0" MinWidth="20"/>
                                 </StackPanel>
 
-                                <TextBlock Grid.Column="2" Text="{Binding TotalPrice, StringFormat={}{0:C}, ConverterCulture='ro-RO'}" 
+                                <TextBlock Grid.Column="2" Text="{Binding TotalPrice, Mode=OneWay, StringFormat={}{0:C}, ConverterCulture='ro-RO'}" 
                                            FontWeight="Bold" VerticalAlignment="Center" Margin="10,0"/>
 
                                 <Button Grid.Column="3" Content="X" 

@@ -27,7 +27,6 @@
                     <TextBlock Text="{Binding Denumire}" FontWeight="Bold" FontSize="16" TextWrapping="Wrap"/>
                     <TextBlock Text="{Binding PretAfisat}" Foreground="DarkGreen" FontWeight="SemiBold" Margin="0,2"/>
 
-                    <!-- TextBlock UNIC pentru detalii cantitate/gramaj -->
                     <TextBlock Text="{Binding DetaliiCantitateAfisata, FallbackValue='N/A'}" FontSize="12" FontStyle="Italic" Margin="0,2"/>
 
                     <TextBlock Text="{Binding Descriere}" FontSize="12" TextWrapping="Wrap" MaxHeight="60" TextTrimming="CharacterEllipsis" Margin="0,5"

@@ -44,7 +44,7 @@ namespace RestaurantManagerApp.ViewModels
             var mockCartService = new MockShoppingCartServiceForCartVM();
             var dummyPreparat = new DisplayPreparatViewModel(new Models.Preparat { PreparatID = 1, Denumire = "Produs Coș Design 1", Pret = 25.50m, CantitatePortie = "1 buc", EsteActiv = true, CantitateTotalaStoc = 10 });
             mockCartService.AddItemToCart(dummyPreparat, 2);
-            var dummyMeniu = new DisplayMeniuViewModel(new Models.Meniu { MeniuID = 1, Denumire = "Meniu Coș Design", EsteActiv = true }, new ApplicationSettings { MenuDiscountPercentageX = 10 });
+            var dummyMeniu = new DisplayMenuViewModel(new Models.Meniu { MeniuID = 1, Denumire = "Meniu Coș Design", EsteActiv = true }, new ApplicationSettings { MenuDiscountPercentageX = 10 });
             mockCartService.AddItemToCart(dummyMeniu, 1);
             _shoppingCartService = mockCartService;
 
