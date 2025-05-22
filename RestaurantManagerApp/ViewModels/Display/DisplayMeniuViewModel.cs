@@ -38,6 +38,7 @@ namespace RestaurantManagerApp.ViewModels.Display
                 {
                     if (componenta.Preparat != null)
                     {
+                        //System.Diagnostics.Debug.WriteLine($"    Alergeni componentă: {string.Join(", ", componenta.Preparat.Alergeni.Select(a => a.Nume))}");
                         subtotalComponente += componenta.Preparat.Pret; // Simplificare, ar trebui să țină cont de cantitatea din MeniuPreparat
                         if (!componenta.Preparat.EsteActiv || componenta.Preparat.CantitateTotalaStoc <= 0)
                         {
@@ -55,7 +56,43 @@ namespace RestaurantManagerApp.ViewModels.Display
             CalculatedNumericPrice = pretFinal;
 
             var alergeniUnici = new HashSet<string>();
-            // ... (logica alergeni) ...
+            if (meniu.MeniuPreparate != null)
+
+
+            {
+
+
+                foreach (var componenta in meniu.MeniuPreparate)
+
+
+                {
+
+
+                    if (componenta.Preparat?.Alergeni != null)
+
+
+                    {
+
+
+                        foreach (var alergen in componenta.Preparat.Alergeni)
+
+
+                        {
+
+
+                            alergeniUnici.Add(alergen.Nume);
+
+
+                        }
+
+
+                    }
+
+
+                }
+
+
+            }
             AlergeniAfisati = alergeniUnici.Any() ? string.Join(", ", alergeniUnici) : "N/A";
 
             EsteDisponibil = meniu.EsteActiv && toateComponenteleDisponibile;
